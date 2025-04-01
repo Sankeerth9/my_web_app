@@ -6,6 +6,601 @@ const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) 
   : null; // Will be null if no API key is provided
 
+// Universal recipe generation system to handle any ingredients and cuisine combination
+// Simulates AI-powered recipe generation without requiring API keys
+function generateUniversalRecipes(
+  ingredients: string[],
+  cuisine: string,
+  dietary: string[]
+): InsertRecipe[] {
+  console.log(`Generating universal recipes for ${cuisine} cuisine with ingredients: ${ingredients.join(', ')}`);
+  
+  const normalizedCuisine = cuisine.toLowerCase();
+  const cuisineImages = foodImagesByCuisine[normalizedCuisine] || defaultFoodImages;
+  const dietaryFlags = createDietaryFlagsObject(dietary);
+  
+  // Get base recipe patterns for the selected cuisine
+  let baseRecipes = sampleRecipesByCuisine[normalizedCuisine] || [];
+  
+  // If no recipes for the specific cuisine, get recipes from other cuisines
+  if (baseRecipes.length < 3) {
+    const allRecipes = Object.values(sampleRecipesByCuisine).flat();
+    const additionalRecipes = allRecipes
+      .filter(recipe => recipe.cuisine.toLowerCase() !== normalizedCuisine)
+      .slice(0, 3 - baseRecipes.length);
+    
+    baseRecipes = [...baseRecipes, ...additionalRecipes];
+  }
+  
+  // Sort ingredients by importance (proteins first, then vegetables, then spices)
+  const sortedIngredients = [...ingredients].sort((a, b) => {
+    const aIsProtein = isProtein(a);
+    const bIsProtein = isProtein(b);
+    if (aIsProtein && !bIsProtein) return -1;
+    if (!aIsProtein && bIsProtein) return 1;
+    return 0;
+  });
+  
+  // Generate recipes based on the available ingredients
+  return baseRecipes.slice(0, 3).map((baseRecipe: any, index: number) => {
+    // Create a dynamic title based on the main ingredients
+    const mainIngredients = sortedIngredients.slice(0, 2);
+    const recipeType = getRecipeType(normalizedCuisine, mainIngredients);
+    
+    const title = generateRecipeTitle(mainIngredients, recipeType, normalizedCuisine);
+    
+    // Create a dynamic description
+    const description = generateRecipeDescription(mainIngredients, normalizedCuisine, recipeType);
+    
+    // Generate realistic calories based on ingredients and recipe type
+    const calories = calculateApproximateCalories(mainIngredients, recipeType);
+    
+    // Generate cooking time based on recipe type
+    const cookTime = calculateCookingTime(recipeType, mainIngredients);
+    
+    // Combine user ingredients with other necessary ingredients for the recipe
+    const fullIngredientsList = generateCompleteIngredientsList(mainIngredients, normalizedCuisine, recipeType);
+    
+    // Generate realistic step-by-step instructions
+    const instructions = generateInstructions(mainIngredients, normalizedCuisine, recipeType, fullIngredientsList);
+    
+    // Generate a chef's note
+    const chefNote = generateChefNote(mainIngredients, normalizedCuisine);
+    
+    // Complete recipe object
+    return {
+      title,
+      description,
+      ingredients: fullIngredientsList,
+      instructions,
+      cuisine,
+      calories,
+      cookTime,
+      imageUrl: cuisineImages[index % cuisineImages.length],
+      chefNote,
+      dietaryFlags
+    };
+  });
+}
+
+// Helper functions for the universal recipe generator
+function isProtein(ingredient: string): boolean {
+  const proteins = [
+    'chicken', 'beef', 'pork', 'lamb', 'fish', 'salmon', 'tuna', 'shrimp', 
+    'tofu', 'eggs', 'egg', 'turkey', 'duck', 'bean', 'beans', 'lentil', 
+    'lentils', 'chickpea', 'chickpeas', 'paneer', 'tempeh', 'seitan'
+  ];
+  return proteins.some(protein => ingredient.toLowerCase().includes(protein));
+}
+
+function getRecipeType(cuisine: string, ingredients: string[]): string {
+  // Check main ingredients to determine recipe type
+  if (ingredients.some(i => i.toLowerCase().includes('rice'))) {
+    if (cuisine === 'indian') return 'biryani';
+    if (cuisine === 'chinese') return 'fried rice';
+    if (cuisine === 'japanese') return 'rice bowl';
+    return 'rice dish';
+  }
+  
+  if (ingredients.some(i => i.toLowerCase().includes('pasta') || i.toLowerCase().includes('noodle'))) {
+    if (cuisine === 'italian') return 'pasta';
+    if (cuisine === 'chinese' || cuisine === 'japanese') return 'noodle dish';
+    return 'noodle recipe';
+  }
+  
+  if (ingredients.some(i => isProtein(i))) {
+    if (cuisine === 'indian') return 'curry';
+    if (cuisine === 'chinese') return 'stir-fry';
+    if (cuisine === 'italian') return 'sauté';
+    if (cuisine === 'mexican') return 'taco filling';
+    if (cuisine === 'american') return 'grill';
+    return 'main dish';
+  }
+  
+  return 'recipe';
+}
+
+function generateRecipeTitle(mainIngredients: string[], recipeType: string, cuisine: string): string {
+  // Create appealing titles based on ingredients and cuisine
+  const mainIngredient = mainIngredients[0] || 'Flavorful';
+  const secondIngredient = mainIngredients[1];
+  
+  const ingredientName = mainIngredient.charAt(0).toUpperCase() + mainIngredient.slice(1);
+  
+  // Selection of adjectives to make titles interesting
+  const adjectives = [
+    'Delicious', 'Flavorful', 'Aromatic', 'Spicy', 'Savory', 
+    'Quick', 'Traditional', 'Zesty', 'Hearty', 'Gourmet'
+  ];
+  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  
+  // Cuisine-specific naming structures
+  if (cuisine === 'indian') {
+    if (recipeType === 'curry') return `${ingredientName} ${secondIngredient ? '& ' + secondIngredient : ''} Curry`;
+    if (recipeType === 'biryani') return `${ingredientName} Biryani`;
+    return `${randomAdjective} ${ingredientName} ${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}`;
+  }
+  
+  if (cuisine === 'chinese') {
+    if (recipeType === 'stir-fry') return `${ingredientName} ${secondIngredient ? '& ' + secondIngredient : ''} Stir-Fry`;
+    if (recipeType === 'fried rice') return `${ingredientName} Fried Rice`;
+    return `Chinese-Style ${ingredientName} ${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}`;
+  }
+  
+  if (cuisine === 'italian') {
+    if (recipeType === 'pasta') return `${ingredientName} ${secondIngredient ? '& ' + secondIngredient : ''} Pasta`;
+    return `Italian ${ingredientName} ${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}`;
+  }
+  
+  // Default title format
+  return `${randomAdjective} ${cuisine.charAt(0).toUpperCase() + cuisine.slice(1)} ${ingredientName} ${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}`;
+}
+
+function generateRecipeDescription(mainIngredients: string[], cuisine: string, recipeType: string): string {
+  const mainIngredient = mainIngredients[0] || 'ingredients';
+  const secondIngredient = mainIngredients[1];
+  
+  // Selection of description templates
+  const templates = [
+    `A delicious ${cuisine} ${recipeType} featuring ${mainIngredient}${secondIngredient ? ' and ' + secondIngredient : ''}, perfect for a satisfying meal.`,
+    `This ${cuisine} inspired ${recipeType} highlights the flavors of ${mainIngredient}${secondIngredient ? ' combined with ' + secondIngredient : ''}.`,
+    `A vibrant ${cuisine} dish that transforms ${mainIngredient}${secondIngredient ? ' and ' + secondIngredient : ''} into a memorable ${recipeType}.`,
+    `An authentic ${cuisine} ${recipeType} that brings out the best in ${mainIngredient}${secondIngredient ? ' and ' + secondIngredient : ''}.`
+  ];
+  
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
+function calculateApproximateCalories(ingredients: string[], recipeType: string): number {
+  // Base calories by recipe type
+  const baseCalories: Record<string, number> = {
+    'curry': 450,
+    'biryani': 500,
+    'stir-fry': 350,
+    'fried rice': 400,
+    'pasta': 450,
+    'noodle dish': 400,
+    'rice dish': 450,
+    'grill': 350,
+    'main dish': 400,
+    'recipe': 350
+  };
+  
+  // Adjust calories based on protein presence
+  let adjustedCalories = baseCalories[recipeType] || 400;
+  
+  if (ingredients.some(i => i.toLowerCase().includes('chicken') || i.toLowerCase().includes('fish'))) {
+    adjustedCalories -= 50; // Leaner proteins
+  }
+  
+  if (ingredients.some(i => i.toLowerCase().includes('beef') || i.toLowerCase().includes('pork'))) {
+    adjustedCalories += 50; // Fattier proteins
+  }
+  
+  if (ingredients.some(i => i.toLowerCase().includes('cream') || i.toLowerCase().includes('cheese'))) {
+    adjustedCalories += 100; // Dairy adds calories
+  }
+  
+  // Apply some randomness to make it more realistic
+  adjustedCalories += Math.floor(Math.random() * 50);
+  
+  return adjustedCalories;
+}
+
+function calculateCookingTime(recipeType: string, ingredients: string[]): string {
+  // Base cooking times by recipe type
+  const baseTimes: Record<string, number> = {
+    'curry': 35,
+    'biryani': 45,
+    'stir-fry': 20,
+    'fried rice': 25,
+    'pasta': 30,
+    'noodle dish': 25,
+    'rice dish': 35,
+    'grill': 25,
+    'main dish': 30,
+    'recipe': 25
+  };
+  
+  // Adjust time based on ingredients
+  let adjustedTime = baseTimes[recipeType] || 30;
+  
+  // Proteins like beef, lamb take longer
+  if (ingredients.some(i => i.toLowerCase().includes('beef') || i.toLowerCase().includes('lamb'))) {
+    adjustedTime += 15;
+  }
+  
+  // Quick-cooking proteins
+  if (ingredients.some(i => i.toLowerCase().includes('shrimp') || i.toLowerCase().includes('fish'))) {
+    adjustedTime -= 5;
+  }
+  
+  // Rice dishes generally take longer
+  if (ingredients.some(i => i.toLowerCase().includes('rice')) && !recipeType.includes('rice')) {
+    adjustedTime += 10;
+  }
+  
+  // Apply some randomness
+  adjustedTime += Math.floor(Math.random() * 10);
+  
+  // Format the time
+  if (adjustedTime >= 60) {
+    const hours = Math.floor(adjustedTime / 60);
+    const minutes = adjustedTime % 60;
+    return `${hours} hour${hours > 1 ? 's' : ''} ${minutes > 0 ? minutes + ' minutes' : ''}`;
+  }
+  
+  return `${adjustedTime} minutes`;
+}
+
+function generateCompleteIngredientsList(userIngredients: string[], cuisine: string, recipeType: string): string[] {
+  // Start with user-provided ingredients
+  const ingredientsList = [...userIngredients];
+  
+  // Common basic ingredients
+  const basicIngredients = [
+    'Salt', 
+    'Black pepper'
+  ];
+  
+  // Add cuisine-specific ingredients
+  let cuisineIngredients: string[] = [];
+  
+  if (cuisine === 'indian') {
+    cuisineIngredients = [
+      'Cumin powder',
+      'Coriander powder',
+      'Turmeric powder',
+      'Garam masala',
+      'Vegetable oil or ghee'
+    ];
+    
+    if (recipeType === 'curry') {
+      cuisineIngredients.push('Onion, chopped', 'Tomato, chopped', 'Garlic, minced', 'Ginger, grated');
+      if (!ingredientsList.some(i => i.toLowerCase().includes('chili') || i.toLowerCase().includes('chilli'))) {
+        cuisineIngredients.push('Green chilies, chopped');
+      }
+    }
+    
+    if (recipeType === 'biryani') {
+      cuisineIngredients.push('Basmati rice', 'Onion, sliced', 'Yogurt', 'Fresh cilantro, chopped', 'Fresh mint leaves');
+    }
+  }
+  
+  else if (cuisine === 'chinese') {
+    cuisineIngredients = [
+      'Soy sauce',
+      'Sesame oil',
+      'Garlic, minced',
+      'Ginger, grated',
+      'Green onions, sliced'
+    ];
+    
+    if (recipeType === 'stir-fry') {
+      cuisineIngredients.push('Vegetable oil', 'Cornstarch');
+    }
+    
+    if (recipeType === 'fried rice') {
+      if (!ingredientsList.some(i => i.toLowerCase().includes('rice'))) {
+        cuisineIngredients.push('Cooked rice, preferably day-old');
+      }
+      cuisineIngredients.push('Vegetable oil');
+    }
+  }
+  
+  else if (cuisine === 'italian') {
+    cuisineIngredients = [
+      'Olive oil',
+      'Garlic, minced',
+      'Basil leaves',
+      'Oregano'
+    ];
+    
+    if (recipeType === 'pasta') {
+      if (!ingredientsList.some(i => i.toLowerCase().includes('pasta'))) {
+        cuisineIngredients.push('Pasta of your choice');
+      }
+      cuisineIngredients.push('Parmesan cheese, grated');
+    }
+  }
+  
+  else if (cuisine === 'mexican') {
+    cuisineIngredients = [
+      'Cumin powder',
+      'Chili powder',
+      'Cilantro, chopped',
+      'Lime juice',
+      'Onion, chopped'
+    ];
+  }
+  
+  else if (cuisine === 'japanese') {
+    cuisineIngredients = [
+      'Soy sauce',
+      'Mirin',
+      'Rice vinegar',
+      'Sesame oil',
+      'Green onions, sliced'
+    ];
+  }
+  
+  else if (cuisine === 'american') {
+    cuisineIngredients = [
+      'Olive oil or vegetable oil',
+      'Garlic powder',
+      'Onion powder'
+    ];
+    
+    if (recipeType === 'grill') {
+      cuisineIngredients.push('BBQ sauce', 'Worcestershire sauce');
+    }
+  }
+  
+  // Merge all ingredients, removing duplicates
+  const mergedIngredients = [...ingredientsList];
+  
+  // Add basic ingredients not already included
+  basicIngredients.forEach(ingredient => {
+    if (!ingredientsList.some(i => i.toLowerCase() === ingredient.toLowerCase())) {
+      mergedIngredients.push(ingredient);
+    }
+  });
+  
+  // Add cuisine-specific ingredients not already included
+  cuisineIngredients.forEach(ingredient => {
+    const ingredientName = ingredient.split(',')[0].trim().toLowerCase();
+    if (!ingredientsList.some(i => i.toLowerCase().includes(ingredientName))) {
+      mergedIngredients.push(ingredient);
+    }
+  });
+  
+  return mergedIngredients;
+}
+
+function generateInstructions(mainIngredients: string[], cuisine: string, recipeType: string, fullIngredients: string[]): string[] {
+  const instructions: string[] = [];
+  
+  // Identify proteins and vegetables
+  const proteins = fullIngredients.filter(i => isProtein(i));
+  const hasRice = fullIngredients.some(i => i.toLowerCase().includes('rice'));
+  const hasPasta = fullIngredients.some(i => i.toLowerCase().includes('pasta'));
+  
+  // Preparation steps based on recipe type
+  if (recipeType === 'curry' || cuisine === 'indian') {
+    instructions.push("Heat oil or ghee in a large pan over medium heat.");
+    instructions.push("Add chopped onions and sauté until golden brown, about 5 minutes.");
+    
+    if (proteins.length > 0) {
+      if (proteins.some(p => p.toLowerCase().includes('chicken') || p.toLowerCase().includes('meat'))) {
+        instructions.push(`Add ${proteins.join(' and ')} and cook until browned on all sides, about 5-7 minutes.`);
+      } else if (proteins.some(p => p.toLowerCase().includes('egg'))) {
+        instructions.push("Heat oil in a separate pan and fry eggs until desired doneness. Set aside.");
+      }
+    }
+    
+    instructions.push("Add minced garlic, grated ginger, and green chilies (if using). Sauté for 1-2 minutes until fragrant.");
+    instructions.push("Add spices (turmeric, cumin, coriander, chili powder) and stir for 30 seconds to toast them.");
+    
+    if (fullIngredients.some(i => i.toLowerCase().includes('tomato'))) {
+      instructions.push("Add chopped tomatoes and cook until soft and oil begins to separate from the masala, about 5 minutes.");
+    }
+    
+    const otherVegetables = fullIngredients.filter(i => 
+      !isProtein(i) && 
+      !i.toLowerCase().includes('rice') && 
+      !i.toLowerCase().includes('salt') && 
+      !i.toLowerCase().includes('pepper') && 
+      !i.toLowerCase().includes('oil') && 
+      !i.toLowerCase().includes('masala') && 
+      !i.toLowerCase().includes('powder') && 
+      !i.toLowerCase().includes('tomato') &&
+      !i.toLowerCase().includes('garlic') &&
+      !i.toLowerCase().includes('ginger') &&
+      !i.toLowerCase().includes('chili')
+    );
+    
+    if (otherVegetables.length > 0) {
+      instructions.push(`Add ${otherVegetables.join(', ')} and stir well to combine.`);
+    }
+    
+    if (hasRice && recipeType === 'biryani') {
+      instructions.push("In a separate pot, parboil the rice until 70% cooked. Drain and set aside.");
+      instructions.push("Layer the partially cooked rice over the curry mixture.");
+      instructions.push("Cover tightly with a lid and cook on low heat for 20 minutes until rice is fully cooked.");
+    } else {
+      instructions.push("Add water or broth if needed to achieve desired consistency.");
+      instructions.push("Simmer for 15-20 minutes until the flavors meld and the sauce thickens.");
+    }
+    
+    if (proteins.some(p => p.toLowerCase().includes('egg')) && !recipeType.includes('biryani')) {
+      instructions.push("Gently add the fried eggs to the curry and simmer for an additional 2-3 minutes.");
+    }
+    
+    instructions.push("Season with salt to taste and garnish with fresh cilantro before serving.");
+    
+    if (hasRice && !recipeType.includes('biryani')) {
+      instructions.push("Serve hot with steamed rice.");
+    }
+  }
+  
+  else if (recipeType === 'stir-fry' || cuisine === 'chinese') {
+    instructions.push("Heat vegetable oil in a wok or large frying pan over high heat until shimmering.");
+    
+    if (proteins.length > 0) {
+      instructions.push(`Add ${proteins.join(' and ')} and stir-fry until nearly cooked through, about 3-4 minutes.`);
+      instructions.push("Transfer protein to a plate and set aside.");
+    }
+    
+    instructions.push("Add minced garlic and grated ginger to the wok and stir-fry for 30 seconds until fragrant.");
+    
+    const vegetables = fullIngredients.filter(i => 
+      !isProtein(i) && 
+      !i.toLowerCase().includes('sauce') && 
+      !i.toLowerCase().includes('oil') &&
+      !i.toLowerCase().includes('salt') &&
+      !i.toLowerCase().includes('pepper') &&
+      !i.toLowerCase().includes('garlic') &&
+      !i.toLowerCase().includes('ginger') &&
+      !i.toLowerCase().includes('cornstarch') &&
+      !i.toLowerCase().includes('rice')
+    );
+    
+    if (vegetables.length > 0) {
+      instructions.push(`Add ${vegetables.join(', ')} and stir-fry for 3-4 minutes until vegetables are crisp-tender.`);
+    }
+    
+    if (proteins.length > 0) {
+      instructions.push("Return the cooked protein to the wok.");
+    }
+    
+    instructions.push("Add soy sauce, sesame oil, and any other sauce ingredients. Toss to combine.");
+    
+    if (fullIngredients.some(i => i.toLowerCase().includes('cornstarch'))) {
+      instructions.push("Mix 1 tablespoon cornstarch with 2 tablespoons water to create a slurry.");
+      instructions.push("Pour the slurry into the wok and stir until sauce thickens, about 1 minute.");
+    }
+    
+    instructions.push("Season with salt and pepper to taste.");
+    instructions.push("Garnish with sliced green onions before serving.");
+    
+    if (hasRice) {
+      instructions.push("Serve hot over steamed rice.");
+    }
+  }
+  
+  else if (recipeType === 'pasta' || cuisine === 'italian') {
+    if (hasPasta) {
+      instructions.push("Bring a large pot of salted water to a boil.");
+      instructions.push("Cook pasta according to package directions until al dente. Drain, reserving 1/2 cup of pasta water.");
+    }
+    
+    instructions.push("Heat olive oil in a large skillet over medium heat.");
+    
+    if (proteins.length > 0) {
+      if (proteins.some(p => p.toLowerCase().includes('chicken') || p.toLowerCase().includes('meat'))) {
+        instructions.push(`Season ${proteins.join(' and ')} with salt and pepper, then cook until browned and cooked through, about 5-7 minutes.`);
+      } else if (proteins.some(p => p.toLowerCase().includes('egg'))) {
+        instructions.push("In a separate bowl, beat eggs with a pinch of salt and pepper. Set aside.");
+      }
+    }
+    
+    instructions.push("Add minced garlic to the skillet and sauté for 1 minute until fragrant.");
+    
+    const vegetables = fullIngredients.filter(i => 
+      !isProtein(i) && 
+      !i.toLowerCase().includes('pasta') && 
+      !i.toLowerCase().includes('oil') &&
+      !i.toLowerCase().includes('salt') &&
+      !i.toLowerCase().includes('pepper') &&
+      !i.toLowerCase().includes('garlic') &&
+      !i.toLowerCase().includes('basil') &&
+      !i.toLowerCase().includes('oregano') &&
+      !i.toLowerCase().includes('cheese')
+    );
+    
+    if (vegetables.length > 0) {
+      instructions.push(`Add ${vegetables.join(', ')} and cook for 3-5 minutes until tender.`);
+    }
+    
+    if (proteins.some(p => p.toLowerCase().includes('egg'))) {
+      instructions.push("Lower the heat and pour in the beaten eggs, stirring quickly to create creamy strands.");
+    }
+    
+    if (hasPasta) {
+      instructions.push("Add the cooked pasta to the skillet and toss to combine.");
+      instructions.push("Add a splash of reserved pasta water to create a silky sauce, if needed.");
+    }
+    
+    instructions.push("Stir in dried herbs (oregano, basil) and season with salt and pepper to taste.");
+    
+    if (fullIngredients.some(i => i.toLowerCase().includes('cheese'))) {
+      instructions.push("Sprinkle with grated cheese and toss until melted.");
+    }
+    
+    instructions.push("Garnish with fresh basil leaves before serving.");
+  }
+  
+  // Default instructions if no specific pattern is matched
+  if (instructions.length === 0) {
+    instructions.push("Prepare all ingredients by washing, chopping, and measuring as needed.");
+    instructions.push("Heat oil in a suitable pan over medium heat.");
+    
+    if (proteins.length > 0) {
+      instructions.push(`Cook ${proteins.join(' and ')} until properly done (browned for meat, set for eggs, etc.).`);
+    }
+    
+    instructions.push("Add aromatics (garlic, onions, ginger) and cook until fragrant.");
+    instructions.push("Add main ingredients and cook until tender.");
+    instructions.push("Season with appropriate spices and herbs.");
+    instructions.push("Add any sauces or liquids needed for the dish.");
+    instructions.push("Adjust seasoning to taste.");
+    instructions.push("Garnish appropriately before serving.");
+  }
+  
+  return instructions;
+}
+
+function generateChefNote(ingredients: string[], cuisine: string): string {
+  // A selection of chef notes based on ingredients and cuisine
+  const chefNotes = [
+    `For the best flavor, toast the spices briefly before adding other ingredients.`,
+    `This dish tastes even better the next day as the flavors continue to develop.`,
+    `Adjust the spice level to your preference by adding more or less chili.`,
+    `Fresh herbs added at the end make a big difference in brightening the flavors.`,
+    `For a richer version, add a tablespoon of butter or cream at the end of cooking.`,
+    `Serve with a squeeze of fresh lemon or lime juice to elevate all the flavors.`,
+    `Use the freshest ingredients you can find for the best results.`
+  ];
+  
+  // Cuisine-specific chef notes
+  const cuisineNotes: Record<string, string[]> = {
+    'indian': [
+      `For authentic flavor, use whole spices toasted and ground just before cooking.`,
+      `A pinch of garam masala added at the end of cooking adds wonderful aroma.`,
+      `To reduce the heat without sacrificing flavor, remove the seeds from the chilies.`,
+      `For a richer curry, add a spoonful of cream or coconut milk at the end.`
+    ],
+    'chinese': [
+      `Have all ingredients prepped before you start cooking, as stir-frying moves quickly.`,
+      `For the perfect stir-fry, cook in batches to avoid overcrowding the wok.`,
+      `A touch of sugar balances the saltiness of the soy sauce.`,
+      `For authentic Chinese flavor, use a high-smoke-point oil like peanut oil.`
+    ],
+    'italian': [
+      `Reserve some pasta cooking water to help the sauce cling to the pasta.`,
+      `For the best flavor, finish cooking the pasta in the sauce for the last minute.`,
+      `Use the highest quality olive oil you can afford for the best flavor.`,
+      `Fresh basil added just before serving adds wonderful aroma and freshness.`
+    ]
+  };
+  
+  // Get cuisine-specific notes
+  const relevantNotes = cuisineNotes[cuisine.toLowerCase()] || chefNotes;
+  
+  // Select a random note
+  return relevantNotes[Math.floor(Math.random() * relevantNotes.length)];
+}
+
 // Additional helper function for creating recipes specifically optimized for eggs, rice, and spices (common Indian ingredients)
 function generateIndianRecipesWithEggsAndRice(): InsertRecipe[] {
   return [
@@ -749,8 +1344,16 @@ export async function generateRecipes(
   dietary: string[]
 ): Promise<InsertRecipe[]> {
   try {
+    console.log(`Generating recipes for ${cuisine} cuisine with ingredients: ${ingredients.join(', ')}`);
+    
     // Set up dietary flags based on user selection
     const initialDietaryFlags = createDietaryFlagsObject(dietary);
+    
+    // First option: Use our universal recipe generator that works with any ingredients
+    // This simulates AI-powered generation without requiring API keys
+    return generateUniversalRecipes(ingredients, cuisine, dietary);
+    
+    // The below sections are kept as fallbacks but won't be reached with the return above
     
     // Special case for the combination of eggs, rice, and Indian cuisine
     // Check if ingredients contain eggs, rice, pepper, salt, and chili powder and cuisine is Indian
