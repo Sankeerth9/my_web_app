@@ -50,12 +50,19 @@ export default function Home() {
   }, [chefTips.length, showTips]);
 
   const generateRecipesMutation = useMutation({
-    mutationFn: (data: RecipeGeneration) => 
-      apiRequest('POST', '/api/recipes/generate', data)
-        .then(res => res.json()),
+    mutationFn: (data: RecipeGeneration) => {
+      console.log("Sending recipe generation request with data:", data);
+      return apiRequest('POST', '/api/recipes/generate', data)
+        .then(res => {
+          console.log("Got response status:", res.status);
+          return res.json();
+        });
+    },
     
     onSuccess: (data) => {
+      console.log("Recipe generation success response:", data);
       if (data.success && data.recipes) {
+        console.log("Setting recipes in state:", data.recipes);
         setRecipes(data.recipes);
         toast({
           title: "Recipes generated!",
@@ -69,6 +76,7 @@ export default function Home() {
           }, 300);
         }
       } else {
+        console.error("Recipe generation unsuccessful:", data);
         toast({
           variant: "destructive",
           title: "Failed to generate recipes",
@@ -78,12 +86,12 @@ export default function Home() {
     },
     
     onError: (error) => {
+      console.error("Error generating recipes:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to generate recipes. Please check your inputs and try again."
       });
-      console.error("Error generating recipes:", error);
     }
   });
 
