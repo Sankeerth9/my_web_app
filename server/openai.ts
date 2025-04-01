@@ -346,13 +346,13 @@ function calculateApproximateCalories(ingredients: string[], recipeType: string)
     'pizza': 500,
     'flatbread': 350,
     'sauté': 350,
-    'roast': 400,
+    'italian_roast': 400,
     'vegetable medley': 200,
     'minestrone': 250,
     'antipasto': 300,
     
     // Japanese cuisine
-    'rice bowl': 400,
+    'japanese_rice_bowl': 400,
     'ramen': 450,
     'teriyaki': 380,
     'miso soup': 200,
@@ -360,7 +360,7 @@ function calculateApproximateCalories(ingredients: string[], recipeType: string)
     
     // Mexican cuisine
     'taco filling': 350,
-    'rice bowl': 400,
+    'mexican_rice_bowl': 400,
     'tortilla': 300,
     'vegetable fajitas': 300,
     'salsa': 100,
@@ -380,7 +380,7 @@ function calculateApproximateCalories(ingredients: string[], recipeType: string)
     'rice dish': 400,
     'noodle dish': 400,
     'bread dish': 350,
-    'soup': 200,
+    'general_soup': 200,
     'appetizer': 250,
     'recipe': 350
   };
