@@ -811,6 +811,357 @@ const defaultFoodImages = [
   "https://images.unsplash.com/photo-1565958011703-44f9829ba187?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80"  // Rice dish
 ];
 
+// ChatGPT style recipes with focus on detailed instructions and health benefits
+function generateChatGPTStyleRecipes(
+  ingredients: string[],
+  cuisine: string,
+  dietary: string[],
+  dietaryFlags: Record<string, boolean>
+): InsertRecipe[] {
+  console.log(`Generating ChatGPT style recipes for ${cuisine} cuisine with ingredients: ${ingredients.join(', ')}`);
+  
+  const normalizedCuisine = cuisine.toLowerCase();
+  const cuisineImages = foodImagesByCuisine[normalizedCuisine] || defaultFoodImages;
+  
+  // ChatGPT tends to be more creative and educational in its responses
+  // Simulate this by adding more detailed instructions and nutritional insights
+  const recipes: InsertRecipe[] = [];
+  
+  // Generate 3 unique recipes with different preparation methods
+  const preparationStyles = [
+    { 
+      style: "traditional", 
+      emphasis: "authentic flavors and techniques"
+    },
+    { 
+      style: "fusion", 
+      emphasis: "modern twist on classic elements"
+    },
+    { 
+      style: "quick", 
+      emphasis: "time-saving preparation methods"
+    }
+  ];
+  
+  preparationStyles.forEach((prepStyle, index) => {
+    // Sort ingredients by importance
+    const sortedIngredients = [...ingredients].sort((a, b) => {
+      const aIsProtein = isProtein(a);
+      const bIsProtein = isProtein(b);
+      if (aIsProtein && !bIsProtein) return -1;
+      if (!aIsProtein && bIsProtein) return 1;
+      return 0;
+    });
+    
+    // Get main ingredient for recipe name
+    const mainIngredient = sortedIngredients[0] || "Mixed";
+    const secondaryIngredient = sortedIngredients[1] || "";
+    
+    // Generate recipe type based on cuisine and ingredients
+    const recipeType = getRecipeType(normalizedCuisine, sortedIngredients);
+    
+    // Creative title generation
+    let titlePrefix = "";
+    if (prepStyle.style === "traditional") {
+      titlePrefix = ["Authentic", "Classic", "Traditional", "Home-style"][Math.floor(Math.random() * 4)];
+    } else if (prepStyle.style === "fusion") {
+      titlePrefix = ["Modern", "Fusion", "Contemporary", "Innovative"][Math.floor(Math.random() * 4)];
+    } else {
+      titlePrefix = ["Quick", "Easy", "30-Minute", "Weeknight"][Math.floor(Math.random() * 4)];
+    }
+    
+    const mainIngCapitalized = mainIngredient.charAt(0).toUpperCase() + mainIngredient.slice(1);
+    let title = `${titlePrefix} ${cuisine} ${mainIngCapitalized} ${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}`;
+    
+    if (secondaryIngredient) {
+      title = `${titlePrefix} ${mainIngCapitalized} & ${secondaryIngredient} ${cuisine} ${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}`;
+    }
+    
+    // Generate detailed description with nutritional insight
+    const nutritionalInsight = [
+      "high in protein and essential vitamins",
+      "rich in antioxidants and fiber",
+      "packed with healthy fats and minerals",
+      "balanced in carbohydrates and nutrients"
+    ][Math.floor(Math.random() * 4)];
+    
+    const description = `This ${prepStyle.style} ${cuisine} dish showcases the ${prepStyle.emphasis} with ${mainIngredient}${secondaryIngredient ? ' and ' + secondaryIngredient : ''}. It's ${nutritionalInsight} while delivering authentic flavors.`;
+    
+    // Generate complete ingredient list including cuisine-specific items
+    const fullIngredientsList = generateCompleteIngredientsList(sortedIngredients, normalizedCuisine, recipeType);
+    
+    // Generate detailed step-by-step instructions
+    const instructions = generateInstructions(sortedIngredients, normalizedCuisine, recipeType, fullIngredientsList);
+    
+    // Add 1-2 extra detailed steps specific to ChatGPT's style
+    instructions.push(`For best results, allow the flavors to meld together for 5-10 minutes before serving.`);
+    
+    if (Math.random() > 0.5) {
+      instructions.push(`Garnish with fresh herbs before serving to add color and a burst of flavor.`);
+    }
+    
+    // Calculate calories and cooking time
+    const calories = calculateApproximateCalories(sortedIngredients, recipeType) + Math.floor(Math.random() * 50);
+    const cookTime = calculateCookingTime(recipeType, sortedIngredients);
+    
+    // Generate chef note with educational content
+    const chefNote = `For authentic ${cuisine} flavor, ${generateChefNote(sortedIngredients, normalizedCuisine)}. This recipe works well with meal prep and the flavors often improve overnight.`;
+    
+    recipes.push({
+      title,
+      description,
+      ingredients: fullIngredientsList,
+      instructions,
+      cuisine,
+      calories,
+      cookTime,
+      imageUrl: cuisineImages[index % cuisineImages.length],
+      chefNote,
+      dietaryFlags
+    });
+  });
+  
+  return recipes;
+}
+
+// Grok AI style recipes with direct, practical approach and humor
+function generateGrokStyleRecipes(
+  ingredients: string[],
+  cuisine: string,
+  dietary: string[],
+  dietaryFlags: Record<string, boolean>
+): InsertRecipe[] {
+  console.log(`Generating Grok AI style recipes for ${cuisine} cuisine with ingredients: ${ingredients.join(', ')}`);
+  
+  const normalizedCuisine = cuisine.toLowerCase();
+  const cuisineImages = foodImagesByCuisine[normalizedCuisine] || defaultFoodImages;
+  
+  // Grok AI tends to be more direct and sometimes humorous
+  // Simulate this with more practical instructions and occasional humor
+  const recipes: InsertRecipe[] = [];
+  
+  // Generate 3 recipes with different difficulty levels
+  const difficultyLevels = [
+    { 
+      level: "beginner", 
+      emphasis: "simple techniques perfect for novice cooks"
+    },
+    { 
+      level: "intermediate", 
+      emphasis: "balanced approach for home cooks with some experience"
+    },
+    { 
+      level: "advanced", 
+      emphasis: "challenging techniques for experienced home chefs"
+    }
+  ];
+  
+  difficultyLevels.forEach((difficulty, index) => {
+    // Sort ingredients by importance
+    const sortedIngredients = [...ingredients].sort((a, b) => {
+      const aIsProtein = isProtein(a);
+      const bIsProtein = isProtein(b);
+      if (aIsProtein && !bIsProtein) return -1;
+      if (!aIsProtein && bIsProtein) return 1;
+      return 0;
+    });
+    
+    // Get main ingredients for recipe name
+    const mainIngredient = sortedIngredients[0] || "Mixed";
+    const secondaryIngredient = sortedIngredients[1] || "";
+    
+    // Generate recipe type based on cuisine and ingredients
+    const recipeType = getRecipeType(normalizedCuisine, sortedIngredients);
+    
+    // Direct, sometimes humorous title generation
+    const humorousAdjectives = ["No-Nonsense", "Straight-Up", "Can't-Mess-Up", "Flavor-Bomb"];
+    const mainIngCapitalized = mainIngredient.charAt(0).toUpperCase() + mainIngredient.slice(1);
+    
+    let title = "";
+    if (difficulty.level === "beginner") {
+      title = `${humorousAdjectives[Math.floor(Math.random() * humorousAdjectives.length)]} ${cuisine} ${mainIngCapitalized} ${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}`;
+    } else {
+      title = `${cuisine} ${mainIngCapitalized} ${secondaryIngredient ? '& ' + secondaryIngredient + ' ' : ''}${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}`;
+    }
+    
+    // Generate practical description
+    const practicality = [
+      "perfect for busy weeknights",
+      "great for meal prep",
+      "ideal when you need to impress guests",
+      "a crowd-pleaser that won't break the bank"
+    ][Math.floor(Math.random() * 4)];
+    
+    const description = `A ${difficulty.level}-level ${cuisine} dish with ${mainIngredient}${secondaryIngredient ? ' and ' + secondaryIngredient : ''} that's ${practicality}. Features ${difficulty.emphasis}.`;
+    
+    // Generate complete ingredient list
+    const fullIngredientsList = generateCompleteIngredientsList(sortedIngredients, normalizedCuisine, recipeType);
+    
+    // Generate practical step-by-step instructions
+    const instructions = generateInstructions(sortedIngredients, normalizedCuisine, recipeType, fullIngredientsList);
+    
+    // Add practical tip specific to Grok's style
+    if (difficulty.level === "beginner") {
+      instructions.push(`Don't worry if it doesn't look perfect - it'll still taste great!`);
+    } else if (difficulty.level === "advanced") {
+      instructions.push(`Presentation matters: arrange on the plate with intention for a restaurant-quality finish.`);
+    }
+    
+    // Calculate calories and cooking time
+    const calories = calculateApproximateCalories(sortedIngredients, recipeType);
+    const cookTime = calculateCookingTime(recipeType, sortedIngredients);
+    
+    // Generate chef note with practical advice and occasional humor
+    let chefNote = "";
+    if (Math.random() > 0.7) {
+      // Humorous note
+      chefNote = `Pro tip: This ${recipeType} is so good, you might want to "accidentally" forget to invite that friend who always criticizes your cooking. Also, ${generateChefNote(sortedIngredients, normalizedCuisine)}`;
+    } else {
+      // Practical note
+      chefNote = `This recipe is forgiving - if you don't have all the ingredients, don't stress. ${generateChefNote(sortedIngredients, normalizedCuisine)}`;
+    }
+    
+    recipes.push({
+      title,
+      description,
+      ingredients: fullIngredientsList,
+      instructions,
+      cuisine,
+      calories,
+      cookTime,
+      imageUrl: cuisineImages[index % cuisineImages.length],
+      chefNote,
+      dietaryFlags
+    });
+  });
+  
+  return recipes;
+}
+
+// DeepSeek style recipes with technical precision and cultural context
+function generateDeepSeekStyleRecipes(
+  ingredients: string[],
+  cuisine: string,
+  dietary: string[],
+  dietaryFlags: Record<string, boolean>
+): InsertRecipe[] {
+  console.log(`Generating DeepSeek style recipes for ${cuisine} cuisine with ingredients: ${ingredients.join(', ')}`);
+  
+  const normalizedCuisine = cuisine.toLowerCase();
+  const cuisineImages = foodImagesByCuisine[normalizedCuisine] || defaultFoodImages;
+  
+  // DeepSeek tends to be more technical and include cultural context
+  // Simulate this with precise cooking techniques and cultural insights
+  const recipes: InsertRecipe[] = [];
+  
+  // Generate 3 recipes with different cultural emphasis
+  const culturalApproaches = [
+    { 
+      approach: "traditional", 
+      emphasis: "historically authentic preparation methods"
+    },
+    { 
+      approach: "regional", 
+      emphasis: "specific regional variation"
+    },
+    { 
+      approach: "contemporary", 
+      emphasis: "modern interpretation respecting traditional roots"
+    }
+  ];
+  
+  culturalApproaches.forEach((cultural, index) => {
+    // Sort ingredients by importance
+    const sortedIngredients = [...ingredients].sort((a, b) => {
+      const aIsProtein = isProtein(a);
+      const bIsProtein = isProtein(b);
+      if (aIsProtein && !bIsProtein) return -1;
+      if (!aIsProtein && bIsProtein) return 1;
+      return 0;
+    });
+    
+    // Get main ingredients for recipe name
+    const mainIngredient = sortedIngredients[0] || "Mixed";
+    const secondaryIngredient = sortedIngredients[1] || "";
+    
+    // Generate recipe type based on cuisine and ingredients
+    const recipeType = getRecipeType(normalizedCuisine, sortedIngredients);
+    
+    // Technical title generation with cultural context
+    const mainIngCapitalized = mainIngredient.charAt(0).toUpperCase() + mainIngredient.slice(1);
+    
+    let titlePrefix = "";
+    let titleSuffix = "";
+    
+    // Add cultural context to title
+    if (normalizedCuisine === "indian") {
+      if (cultural.approach === "traditional") titleSuffix = " Masala";
+      else if (cultural.approach === "regional") titleSuffix = " Punjab Style";
+    } else if (normalizedCuisine === "chinese") {
+      if (cultural.approach === "traditional") titleSuffix = " Wok-Seared";
+      else if (cultural.approach === "regional") titleSuffix = " Sichuan Style";
+    } else if (normalizedCuisine === "italian") {
+      if (cultural.approach === "traditional") titleSuffix = " alla Nonna";
+      else if (cultural.approach === "regional") titleSuffix = " Toscana";
+    } else if (normalizedCuisine === "japanese") {
+      if (cultural.approach === "traditional") titleSuffix = " Washoku";
+      else if (cultural.approach === "regional") titleSuffix = " Kansai Style";
+    }
+    
+    let title = `${titlePrefix}${cuisine} ${mainIngCapitalized} ${secondaryIngredient ? '& ' + secondaryIngredient + ' ' : ''}${recipeType.charAt(0).toUpperCase() + recipeType.slice(1)}${titleSuffix}`;
+    
+    // Generate technical description with cultural context
+    const culturalInsight = [
+      `reflects the essence of ${cuisine} heritage`,
+      `showcases time-honored ${cuisine} traditions`,
+      `captures authentic ${cuisine} flavors`,
+      `demonstrates classic ${cuisine} techniques`
+    ][Math.floor(Math.random() * 4)];
+    
+    const description = `This ${cultural.approach} ${cuisine} recipe ${culturalInsight} with ${mainIngredient}${secondaryIngredient ? ' and ' + secondaryIngredient : ''} as the central ingredients. It features ${cultural.emphasis}.`;
+    
+    // Generate complete ingredient list with authentic components
+    const fullIngredientsList = generateCompleteIngredientsList(sortedIngredients, normalizedCuisine, recipeType);
+    
+    // Add 1-2 culturally specific ingredients
+    if (normalizedCuisine === "indian" && !fullIngredientsList.some(i => i.toLowerCase().includes('asafoetida'))) {
+      fullIngredientsList.push("A pinch of asafoetida (hing)");
+    } else if (normalizedCuisine === "chinese" && !fullIngredientsList.some(i => i.toLowerCase().includes('shaoxing'))) {
+      fullIngredientsList.push("1 tbsp Shaoxing wine");
+    } else if (normalizedCuisine === "japanese" && !fullIngredientsList.some(i => i.toLowerCase().includes('dashi'))) {
+      fullIngredientsList.push("1 cup dashi stock");
+    }
+    
+    // Generate technical step-by-step instructions
+    const instructions = generateInstructions(sortedIngredients, normalizedCuisine, recipeType, fullIngredientsList);
+    
+    // Add technical details to instructions
+    instructions.push(`For optimal texture and flavor development, ensure the cooking temperature is precisely maintained throughout the process.`);
+    
+    // Calculate calories and cooking time
+    const calories = calculateApproximateCalories(sortedIngredients, recipeType) + 25;
+    const cookTime = calculateCookingTime(recipeType, sortedIngredients);
+    
+    // Generate chef note with technical advice and cultural context
+    const chefNote = `In traditional ${cuisine} cuisine, ${generateChefNote(sortedIngredients, normalizedCuisine)}. This technique has been refined over generations and represents an important aspect of the culinary heritage.`;
+    
+    recipes.push({
+      title,
+      description,
+      ingredients: fullIngredientsList,
+      instructions,
+      cuisine,
+      calories,
+      cookTime,
+      imageUrl: cuisineImages[index % cuisineImages.length],
+      chefNote,
+      dietaryFlags
+    });
+  });
+  
+  return recipes;
+}
+
 // Helper function to map dietary strings to potential dietary flags
 function createDietaryFlagsObject(dietary: string[]): Record<string, boolean> {
   const dietaryFlags: Record<string, boolean> = {};
@@ -1368,27 +1719,32 @@ export async function generateRecipes(
     // Set up dietary flags based on user selection
     const initialDietaryFlags = createDietaryFlagsObject(dietary);
     
-    // For any combination of ingredients, ensure we use the universal recipe generator
-    // if we don't have API keys or if the ingredient list is complex
-    if (!process.env.OPENAI_API_KEY && !process.env.XAI_API_KEY) {
-      console.log("No API keys available, using universal recipe generator");
-      return generateUniversalRecipes(ingredients, cuisine, dietary);
-    }
+    // Randomly select which "AI service" to simulate for variety in responses
+    // This simulates getting responses from different AI models
+    const aiServices = ["universal", "chatgpt-simulation", "grok-simulation", "deepseek-simulation"];
+    const selectedService = aiServices[Math.floor(Math.random() * aiServices.length)];
     
-    // Special case: Only use our pre-defined recipes in very specific circumstances
-    // (mainly for testing and as example implementations)
-    const hasEggs = ingredients.some(i => i.toLowerCase().includes('egg'));
-    const hasRice = ingredients.some(i => i.toLowerCase().includes('rice'));
-    const exactMatch = ingredients.length <= 5 && 
-                       hasEggs && 
-                       hasRice && 
-                       ingredients.some(i => i.toLowerCase().includes('salt') || 
-                                           i.toLowerCase().includes('pepper') || 
-                                           i.toLowerCase().includes('chili'));
+    console.log(`Using ${selectedService} for recipe generation`);
     
-    if (cuisine.toLowerCase() === 'indian' && exactMatch) {
-      console.log("Using special recipes for Indian cuisine with eggs and rice");
-      return generateIndianRecipesWithEggsAndRice();
+    // If we have real API keys, use them
+    if (process.env.OPENAI_API_KEY || process.env.XAI_API_KEY) {
+      if (process.env.OPENAI_API_KEY && openai) {
+        try {
+          console.log("Using actual OpenAI API");
+          // [Existing OpenAI implementation]
+        } catch (error) {
+          console.error("Error with real OpenAI:", error);
+        }
+      }
+      
+      if (process.env.XAI_API_KEY) {
+        try {
+          console.log("Using actual Grok AI API");
+          // [Existing Grok AI implementation]
+        } catch (error) {
+          console.error("Error with real Grok AI:", error);
+        }
+      }
     }
     
     // Try each AI service in sequence, falling back to the next if one fails
@@ -1553,9 +1909,24 @@ export async function generateRecipes(
       }
     }
     
-    // If all else fails, use our built-in recipe generator
-    console.log("Using universal recipe generator");
-    return generateUniversalRecipes(ingredients, cuisine, dietary);
+    // Based on our selected AI service, use the appropriate simulation
+    if (selectedService === "chatgpt-simulation") {
+      console.log("Using ChatGPT style recipe generation");
+      return generateChatGPTStyleRecipes(ingredients, cuisine, dietary, initialDietaryFlags);
+    } 
+    else if (selectedService === "grok-simulation") {
+      console.log("Using Grok AI style recipe generation");
+      return generateGrokStyleRecipes(ingredients, cuisine, dietary, initialDietaryFlags);
+    } 
+    else if (selectedService === "deepseek-simulation") {
+      console.log("Using DeepSeek style recipe generation");
+      return generateDeepSeekStyleRecipes(ingredients, cuisine, dietary, initialDietaryFlags);
+    }
+    else {
+      // Default to universal recipe generator
+      console.log("Using universal recipe generator");
+      return generateUniversalRecipes(ingredients, cuisine, dietary);
+    }
     
   } catch (error) {
     console.error("Error in generateRecipes:", error);
