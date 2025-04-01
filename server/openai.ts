@@ -32,6 +32,25 @@ function generateUniversalRecipes(
     baseRecipes = [...baseRecipes, ...additionalRecipes];
   }
   
+  // If we still have fewer than 3 recipes, add more generic ones
+  if (baseRecipes.length < 3) {
+    const genericRecipeCount = 3 - baseRecipes.length;
+    for (let i = 0; i < genericRecipeCount; i++) {
+      baseRecipes.push({
+        title: `${cuisine} Style Dish ${i+1}`,
+        description: `A delicious ${cuisine} inspired dish made with your ingredients.`,
+        ingredients: [],
+        instructions: [],
+        cuisine: normalizedCuisine,
+        calories: 400,
+        cookTime: "30 minutes",
+        imageUrl: "",
+        chefNote: "Experiment with the spice levels to match your taste!",
+        dietaryFlags: {}
+      });
+    }
+  }
+  
   // Sort ingredients by importance (proteins first, then vegetables, then spices)
   const sortedIngredients = [...ingredients].sort((a, b) => {
     const aIsProtein = isProtein(a);
@@ -1349,22 +1368,25 @@ export async function generateRecipes(
     // Set up dietary flags based on user selection
     const initialDietaryFlags = createDietaryFlagsObject(dietary);
     
-    // Special case for the combination of eggs, rice, and Indian cuisine
+    // For any combination of ingredients, ensure we use the universal recipe generator
+    // if we don't have API keys or if the ingredient list is complex
+    if (!process.env.OPENAI_API_KEY && !process.env.XAI_API_KEY) {
+      console.log("No API keys available, using universal recipe generator");
+      return generateUniversalRecipes(ingredients, cuisine, dietary);
+    }
+    
+    // Special case: Only use our pre-defined recipes in very specific circumstances
+    // (mainly for testing and as example implementations)
     const hasEggs = ingredients.some(i => i.toLowerCase().includes('egg'));
     const hasRice = ingredients.some(i => i.toLowerCase().includes('rice'));
-    const hasChiliPowder = ingredients.some(i => 
-      i.toLowerCase().includes('chili powder') || 
-      i.toLowerCase().includes('chilli powder') || 
-      i.toLowerCase().includes('chillipowder'));
-    const hasPepper = ingredients.some(i => i.toLowerCase().includes('pepper'));
-    const hasSalt = ingredients.some(i => i.toLowerCase().includes('salt'));
+    const exactMatch = ingredients.length <= 5 && 
+                       hasEggs && 
+                       hasRice && 
+                       ingredients.some(i => i.toLowerCase().includes('salt') || 
+                                           i.toLowerCase().includes('pepper') || 
+                                           i.toLowerCase().includes('chili'));
     
-    if (
-      cuisine.toLowerCase() === 'indian' && 
-      hasEggs && 
-      hasRice && 
-      (hasPepper || hasSalt || hasChiliPowder)
-    ) {
+    if (cuisine.toLowerCase() === 'indian' && exactMatch) {
       console.log("Using special recipes for Indian cuisine with eggs and rice");
       return generateIndianRecipesWithEggsAndRice();
     }
