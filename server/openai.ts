@@ -1349,14 +1349,7 @@ export async function generateRecipes(
     // Set up dietary flags based on user selection
     const initialDietaryFlags = createDietaryFlagsObject(dietary);
     
-    // First option: Use our universal recipe generator that works with any ingredients
-    // This simulates AI-powered generation without requiring API keys
-    return generateUniversalRecipes(ingredients, cuisine, dietary);
-    
-    // The below sections are kept as fallbacks but won't be reached with the return above
-    
     // Special case for the combination of eggs, rice, and Indian cuisine
-    // Check if ingredients contain eggs, rice, pepper, salt, and chili powder and cuisine is Indian
     const hasEggs = ingredients.some(i => i.toLowerCase().includes('egg'));
     const hasRice = ingredients.some(i => i.toLowerCase().includes('rice'));
     const hasChiliPowder = ingredients.some(i => 
@@ -1376,265 +1369,175 @@ export async function generateRecipes(
       return generateIndianRecipesWithEggsAndRice();
     }
     
-    // If OpenAI is available, use it to generate recipes
-    if (openai) {
-      console.log("Using OpenAI to generate recipes");
-      // Create a detailed dietary instructions string
-      const dietaryConditions = dietary.length > 0 
-        ? `The recipes MUST strictly comply with the following dietary restrictions: ${dietary.join(", ")}. 
-          Make sure every ingredient and cooking method adheres to these restrictions. 
-          Be precise with the dietaryFlags object to accurately reflect these restrictions.`
-        : "";
-      
-      const systemPrompt = `
-        You are a professional chef specialized in creating recipes from available ingredients. 
-        You excel at ${cuisine} cuisine and understanding dietary restrictions. 
-        Always provide detailed, accurate recipes with precise instructions.
-        Make sure your dietaryFlags object is accurate and reflects the exact dietary needs.
-      `;
-      
-      const prompt = `
-        Create 3 different delicious ${cuisine} recipe ideas using these ingredients: ${ingredients.join(", ")}.
-        ${dietaryConditions}
+    // Try each AI service in sequence, falling back to the next if one fails
+    if (process.env.OPENAI_API_KEY && openai) {
+      try {
+        console.log("Attempting to generate recipes using OpenAI...");
         
-        For each recipe, provide the following information in a structured JSON format:
+        const dietaryConditions = dietary.length > 0 
+          ? `The recipes MUST strictly comply with the following dietary restrictions: ${dietary.join(", ")}.` 
+          : "";
         
-        1. title: A creative, appealing title
-        2. description: A vibrant description (1-2 sentences) highlighting flavors and appearance
-        3. ingredients: List of all needed ingredients (including the ones provided and additional common ingredients)
-        4. instructions: Detailed step-by-step cooking instructions
-        5. calories: Approximate calories per serving (realistic number)
-        6. cookTime: Total cooking time in format "X minutes" or "X hours Y minutes" 
-        7. chefNote: A professional tip to enhance the dish
-        8. dietaryFlags: An object with boolean flags for:
-           - vegetarian (true if no meat/fish)
-           - vegan (true if no animal products)
-           - glutenFree (true if no gluten)
-           - lowCarb (true if low in carbohydrates)
-           - dairyFree (true if no dairy products)
-           - keto (true if keto-friendly)
+        const systemPrompt = `You are a professional chef specialized in creating recipes from available ingredients.`;
         
-        Return a valid JSON object with a 'recipes' array containing exactly 3 recipes with all the fields mentioned above.
-      `;
-
-      const response = await openai!.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.7,
-      });
-
-      const content = response.choices[0].message.content;
-      if (!content) {
-        throw new Error("Failed to generate recipes: No content in OpenAI response");
-      }
-
-      const jsonResponse = JSON.parse(content);
-      
-      if (!jsonResponse.recipes || !Array.isArray(jsonResponse.recipes) || jsonResponse.recipes.length === 0) {
-        throw new Error("Failed to generate recipes: Invalid response format");
-      }
-      
-      // Get appropriate food images for this cuisine
-      const cuisineImages = foodImagesByCuisine[cuisine.toLowerCase()] || defaultFoodImages;
-      
-      // Format the recipes for our database
-      return jsonResponse.recipes.map((recipe: any, index: number) => {
-        // Merge user-selected dietary flags with AI-generated ones
-        const mergedDietaryFlags = {
-          ...recipe.dietaryFlags,
-          ...initialDietaryFlags
-        };
-        
-        return {
-          title: recipe.title,
-          description: recipe.description,
-          ingredients: recipe.ingredients,
-          instructions: recipe.instructions,
-          cuisine: cuisine,
-          calories: typeof recipe.calories === 'number' ? recipe.calories : parseInt(recipe.calories) || 400,
-          cookTime: recipe.cookTime || "30 minutes",
-          imageUrl: cuisineImages[index % cuisineImages.length],
-          chefNote: recipe.chefNote || "Enjoy with your favorite side dish!",
-          dietaryFlags: mergedDietaryFlags
-        };
-      });
-    } 
-    // If no OpenAI API key is available, use pre-defined recipes
-    else {
-      console.log("Using pre-defined recipes (no OpenAI API key available)");
-      
-      // Normalize cuisine name to match our sample data keys
-      const normalizedCuisine = cuisine.toLowerCase();
-      
-      // Get recipes for the requested cuisine, or default to a mixed selection
-      let availableRecipes = sampleRecipesByCuisine[normalizedCuisine] || [];
-      
-      // If no recipes for the specific cuisine or not enough, add recipes from other cuisines
-      if (availableRecipes.length < 3) {
-        const allRecipes = Object.values(sampleRecipesByCuisine).flat();
-        const additionalRecipes = allRecipes
-          .filter(recipe => recipe.cuisine.toLowerCase() !== normalizedCuisine)
-          .slice(0, 3 - availableRecipes.length);
-        
-        availableRecipes = [...availableRecipes, ...additionalRecipes];
-      }
-      
-      // Enhanced recipe customization based on user's ingredients
-      const customizedRecipes = availableRecipes.slice(0, 3).map((recipe: any) => {
-        // Find which user ingredients are already in the recipe
-        const userIngredientsInRecipe: string[] = [];
-        const additionalIngredients: string[] = [];
-        
-        // Process each user ingredient
-        ingredients.forEach(userIngredient => {
-          const userIngredientLower = userIngredient.toLowerCase().trim();
+        const prompt = `
+          Create 3 different delicious ${cuisine} recipe ideas using these ingredients: ${ingredients.join(", ")}.
+          ${dietaryConditions}
           
-          // Check if this ingredient or something similar is already in the recipe
-          const alreadyIncluded = recipe.ingredients.some((recipeIngredient: string) => 
-            recipeIngredient.toLowerCase().includes(userIngredientLower) ||
-            userIngredientLower.includes(recipeIngredient.toLowerCase().split(',')[0].trim())
-          );
+          For each recipe, provide the following in a structured JSON format:
           
-          if (alreadyIncluded) {
-            userIngredientsInRecipe.push(userIngredient);
-          } else {
-            additionalIngredients.push(userIngredient);
-          }
+          1. title: A creative, appealing title
+          2. description: A vibrant description (1-2 sentences)
+          3. ingredients: List of all needed ingredients
+          4. instructions: Detailed step-by-step cooking instructions
+          5. calories: Approximate calories per serving
+          6. cookTime: Total cooking time in format "X minutes" or "X hours Y minutes"
+          7. chefNote: A professional tip to enhance the dish
+          8. dietaryFlags: An object with boolean flags for: vegetarian, vegan, glutenFree, lowCarb, dairyFree, keto
+          
+          Return a valid JSON object with a 'recipes' array containing 3 recipes.
+        `;
+        
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
         });
         
-        // Generate a more dynamic title based on the ingredients
-        let newTitle = recipe.title;
-        if (additionalIngredients.length > 0 && additionalIngredients.length <= 2) {
-          newTitle = `${recipe.title} with ${additionalIngredients.join(' & ')}`;
-        } else if (additionalIngredients.length > 2) {
-          // If there are many new ingredients, create a more general updated title
-          const primaryIngredient = additionalIngredients[0];
-          newTitle = `${primaryIngredient.charAt(0).toUpperCase() + primaryIngredient.slice(1)} ${recipe.title}`;
+        const content = response.choices[0].message.content;
+        if (!content) {
+          throw new Error("Failed to generate recipes: No content in OpenAI response");
         }
         
-        // Create a modified description mentioning the user's ingredients
-        let newDescription = recipe.description;
-        if (userIngredientsInRecipe.length > 0 || additionalIngredients.length > 0) {
-          const allUserIngredients = [...userIngredientsInRecipe, ...additionalIngredients];
-          const highlightIngredients = allUserIngredients.slice(0, 3);
-          
-          // Append to the existing description
-          newDescription = `${recipe.description} Made with your ${highlightIngredients.join(', ')}.`;
-        }
+        const jsonResponse = JSON.parse(content);
         
-        // Update instructions when adding new ingredients
-        let newInstructions = [...recipe.instructions];
-        if (additionalIngredients.length > 0) {
-          // Add a new step or modify existing steps to include the new ingredients
-          newInstructions.push(`Add ${additionalIngredients.join(', ')} to enhance the flavor and make the dish your own.`);
+        if (!jsonResponse.recipes || !Array.isArray(jsonResponse.recipes) || jsonResponse.recipes.length === 0) {
+          throw new Error("Failed to generate recipes: Invalid response format");
         }
-        
-        // Create a modified recipe with user's ingredients incorporated
-        const modifiedRecipe = {
-          ...recipe,
-          ingredients: [...recipe.ingredients, ...additionalIngredients],
-          title: newTitle,
-          description: newDescription,
-          instructions: newInstructions,
-          dietaryFlags: {
-            ...recipe.dietaryFlags,
-            ...initialDietaryFlags
-          }
-        };
         
         // Get appropriate food images for this cuisine
-        const cuisineImages = foodImagesByCuisine[normalizedCuisine] || defaultFoodImages;
+        const cuisineImages = foodImagesByCuisine[cuisine.toLowerCase()] || defaultFoodImages;
         
-        return {
-          ...modifiedRecipe,
-          cuisine: cuisine, // Ensure cuisine matches user selection
-          imageUrl: cuisineImages[Math.floor(Math.random() * cuisineImages.length)]
-        };
-      });
-      
-      return customizedRecipes;
+        // Format the recipes for our database
+        return jsonResponse.recipes.map((recipe: any, index: number) => {
+          // Merge user-selected dietary flags with AI-generated ones
+          const mergedDietaryFlags = {
+            ...recipe.dietaryFlags,
+            ...initialDietaryFlags
+          };
+          
+          return {
+            title: recipe.title,
+            description: recipe.description,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            cuisine: cuisine,
+            calories: typeof recipe.calories === 'number' ? recipe.calories : parseInt(recipe.calories) || 400,
+            cookTime: recipe.cookTime || "30 minutes",
+            imageUrl: cuisineImages[index % cuisineImages.length],
+            chefNote: recipe.chefNote || "Enjoy with your favorite side dish!",
+            dietaryFlags: mergedDietaryFlags
+          };
+        });
+      } catch (error) {
+        console.error("Error with OpenAI:", error);
+        // Continue to the next provider
+      }
     }
+    
+    // Try Grok AI if OpenAI failed
+    if (process.env.XAI_API_KEY) {
+      try {
+        console.log("Attempting to generate recipes using Grok AI...");
+        
+        // Initialize Grok API client
+        const xai = new OpenAI({ baseURL: "https://api.x.ai/v1", apiKey: process.env.XAI_API_KEY });
+        
+        // Create a detailed dietary instructions string
+        const dietaryConditions = dietary.length > 0 
+          ? `The recipes MUST strictly comply with the following dietary restrictions: ${dietary.join(", ")}.`
+          : "";
+        
+        const prompt = `
+          Create 3 different delicious ${cuisine} recipe ideas using these ingredients: ${ingredients.join(", ")}.
+          ${dietaryConditions}
+          
+          For each recipe, provide the following in a structured JSON format:
+          
+          1. title: A creative, appealing title
+          2. description: A vibrant description (1-2 sentences)
+          3. ingredients: List of all needed ingredients
+          4. instructions: Detailed step-by-step cooking instructions
+          5. calories: Approximate calories per serving
+          6. cookTime: Total cooking time in format "X minutes" or "X hours Y minutes"
+          7. chefNote: A professional tip to enhance the dish
+          8. dietaryFlags: An object with boolean flags for: vegetarian, vegan, glutenFree, lowCarb, dairyFree, keto
+          
+          Return a valid JSON object with a 'recipes' array containing 3 recipes.
+        `;
+        
+        const response = await xai.chat.completions.create({
+          model: "grok-2-1212",
+          messages: [
+            { role: "system", content: "You are a professional chef specialized in creating recipes." },
+            { role: "user", content: prompt }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+        });
+        
+        const content = response.choices[0].message.content;
+        if (!content) {
+          throw new Error("Failed to generate recipes: No content in Grok AI response");
+        }
+        
+        const jsonResponse = JSON.parse(content);
+        
+        if (!jsonResponse.recipes || !Array.isArray(jsonResponse.recipes) || jsonResponse.recipes.length === 0) {
+          throw new Error("Failed to generate recipes: Invalid response format");
+        }
+        
+        // Get appropriate food images for this cuisine
+        const cuisineImages = foodImagesByCuisine[cuisine.toLowerCase()] || defaultFoodImages;
+        
+        // Format the recipes for our database
+        return jsonResponse.recipes.map((recipe: any, index: number) => {
+          // Merge user-selected dietary flags with AI-generated ones
+          const mergedDietaryFlags = {
+            ...recipe.dietaryFlags,
+            ...initialDietaryFlags
+          };
+          
+          return {
+            title: recipe.title,
+            description: recipe.description,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            cuisine: cuisine,
+            calories: typeof recipe.calories === 'number' ? recipe.calories : parseInt(recipe.calories) || 400,
+            cookTime: recipe.cookTime || "30 minutes",
+            imageUrl: cuisineImages[index % cuisineImages.length],
+            chefNote: recipe.chefNote || "Enjoy with your favorite side dish!",
+            dietaryFlags: mergedDietaryFlags
+          };
+        });
+      } catch (error) {
+        console.error("Error with Grok AI:", error);
+        // Continue to the universal recipe generator
+      }
+    }
+    
+    // If all else fails, use our built-in recipe generator
+    console.log("Using universal recipe generator");
+    return generateUniversalRecipes(ingredients, cuisine, dietary);
+    
   } catch (error) {
-    console.error("Error generating recipes:", error);
-    
-    // Fallback to sample recipes with enhanced customization if API call fails
-    console.log("Falling back to customized sample recipes due to error");
-    
-    const normalizedCuisine = cuisine.toLowerCase();
-    const fallbackRecipes = sampleRecipesByCuisine[normalizedCuisine] || 
-                          Object.values(sampleRecipesByCuisine).flat().slice(0, 3);
-    
-    // Get appropriate food images for this cuisine
-    const cuisineImages = foodImagesByCuisine[normalizedCuisine] || defaultFoodImages;
-    
-    // Apply more advanced customization to the fallback recipes
-    return fallbackRecipes.slice(0, 3).map((recipe: any, index: number) => {
-      // Find which user ingredients can be incorporated
-      const userIngredientsInRecipe: string[] = [];
-      const additionalIngredients: string[] = [];
-      
-      // Process each user ingredient
-      ingredients.forEach(userIngredient => {
-        const userIngredientLower = userIngredient.toLowerCase().trim();
-        
-        // Check if this ingredient or something similar is already in the recipe
-        const alreadyIncluded = recipe.ingredients.some((recipeIngredient: string) => 
-          recipeIngredient.toLowerCase().includes(userIngredientLower)
-        );
-        
-        if (alreadyIncluded) {
-          userIngredientsInRecipe.push(userIngredient);
-        } else {
-          additionalIngredients.push(userIngredient);
-        }
-      });
-      
-      // Create a custom title highlighting the user's ingredients
-      let newTitle = recipe.title;
-      if (additionalIngredients.length > 0) {
-        if (additionalIngredients.length <= 2) {
-          newTitle = `${recipe.title} with ${additionalIngredients.join(' & ')}`;
-        } else {
-          // Focus on the main new ingredient for the title
-          newTitle = `${additionalIngredients[0].charAt(0).toUpperCase() + additionalIngredients[0].slice(1)} ${recipe.title}`;
-        }
-      }
-      
-      // Enhance the description to acknowledge the user's ingredients
-      let newDescription = recipe.description;
-      if (additionalIngredients.length > 0) {
-        newDescription = `${recipe.description} This recipe has been customized with your ${additionalIngredients.slice(0, 3).join(', ')}.`;
-      }
-      
-      // Enhance the instructions to incorporate new ingredients
-      let newInstructions = [...recipe.instructions];
-      if (additionalIngredients.length > 0) {
-        newInstructions.push(`Add your ${additionalIngredients.join(', ')} to make this dish uniquely yours.`);
-      }
-      
-      return {
-        ...recipe,
-        title: newTitle,
-        description: newDescription,
-        ingredients: [...recipe.ingredients, ...additionalIngredients],
-        instructions: newInstructions,
-        cuisine: cuisine,
-        dietaryFlags: {
-          ...recipe.dietaryFlags,
-          ...createDietaryFlagsObject(dietary)
-        },
-        imageUrl: cuisineImages[index % cuisineImages.length]
-      };
-    });
+    console.error("Error in generateRecipes:", error);
+    // Last resort fallback - generate universal recipes
+    return generateUniversalRecipes(ingredients, cuisine, dietary);
   }
 }
