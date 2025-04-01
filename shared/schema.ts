@@ -39,7 +39,8 @@ export const recipes = pgTable("recipes", {
   cookTime: text("cookTime").notNull(),
   imageUrl: text("imageUrl").notNull(),
   chefNote: text("chefNote"),
-  dietaryFlags: jsonb("dietary_flags").$type<DietaryFlags>().notNull()
+  dietaryFlags: jsonb("dietary_flags").$type<DietaryFlags>().notNull(),
+  saved: boolean("saved").default(false)
 });
 
 export const insertRecipeSchema = createInsertSchema(recipes).omit({
@@ -57,6 +58,9 @@ export const savedRecipeSchema = z.object({
 });
 
 export type RecipeGeneration = z.infer<typeof recipeGenerationSchema>;
-export type Recipe = typeof recipes.$inferSelect;
+// Let's make a more compatible version for the database select results
+export type Recipe = Omit<typeof recipes.$inferSelect, 'saved'> & { 
+  saved: boolean; // Make sure saved is always boolean type
+};
 export type InsertRecipe = z.infer<typeof insertRecipeSchema>;
 export type SavedRecipe = z.infer<typeof savedRecipeSchema>;

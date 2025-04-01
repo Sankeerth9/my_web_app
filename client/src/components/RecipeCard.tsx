@@ -112,9 +112,12 @@ const getCookingDifficulty = (recipe: Recipe) => {
   }
 };
 
-export const RecipeCard = ({ recipe, saved = false }: RecipeCardProps) => {
+export const RecipeCard = ({ recipe, saved }: RecipeCardProps) => {
+  const isInitiallySaved = saved !== undefined ? saved : !!recipe.saved;
   const [showDetails, setShowDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [isSavedState, setIsSavedState] = useState(isInitiallySaved);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -123,24 +126,48 @@ export const RecipeCard = ({ recipe, saved = false }: RecipeCardProps) => {
   const cookingDifficulty = getCookingDifficulty(recipe);
 
   const saveRecipe = async () => {
-    if (saved) return;
-    
-    try {
-      setIsSaving(true);
-      await apiRequest('POST', '/api/recipes/save', { recipeId: recipe.id });
-      queryClient.invalidateQueries({ queryKey: ['/api/recipes/saved'] });
-      toast({
-        title: "Recipe saved!",
-        description: `${recipe.title} has been added to your saved recipes.`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Failed to save recipe",
-        description: "Please try again later."
-      });
-    } finally {
-      setIsSaving(false);
+    if (isSavedState) {
+      // Remove from saved recipes
+      try {
+        setIsRemoving(true);
+        await apiRequest('DELETE', `/api/recipes/saved/${recipe.id}`);
+        setIsSavedState(false);
+        queryClient.invalidateQueries({ queryKey: ['/api/recipes/saved'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/recipes'] });
+        toast({
+          title: "Recipe removed",
+          description: `${recipe.title} has been removed from your saved recipes.`,
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Failed to remove recipe",
+          description: "Please try again later."
+        });
+      } finally {
+        setIsRemoving(false);
+      }
+    } else {
+      // Save recipe
+      try {
+        setIsSaving(true);
+        await apiRequest('POST', '/api/recipes/save', { recipeId: recipe.id });
+        setIsSavedState(true);
+        queryClient.invalidateQueries({ queryKey: ['/api/recipes/saved'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/recipes'] });
+        toast({
+          title: "Recipe saved!",
+          description: `${recipe.title} has been added to your saved recipes.`,
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Failed to save recipe",
+          description: "Please try again later."
+        });
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -212,11 +239,12 @@ export const RecipeCard = ({ recipe, saved = false }: RecipeCardProps) => {
             <Button 
               variant="ghost" 
               size="sm" 
-              className={`text-${saved ? 'primary' : 'secondary'} hover:text-primary`}
+              className={`text-${isSavedState ? 'primary' : 'secondary'} hover:text-primary`}
               onClick={saveRecipe}
-              disabled={isSaving || saved}
+              disabled={isSaving || isRemoving}
             >
-              <BookmarkIcon className={`h-6 w-6 ${saved ? 'fill-primary text-primary' : ''}`} />
+              <BookmarkIcon className={`h-6 w-6 ${isSavedState ? 'fill-primary text-primary' : ''}`} />
+              <span className="sr-only">{isSavedState ? 'Remove from saved' : 'Save recipe'}</span>
             </Button>
           </div>
           

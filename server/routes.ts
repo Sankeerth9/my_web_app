@@ -46,6 +46,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all recipes
+  app.get("/api/recipes", async (req, res) => {
+    try {
+      const allRecipes = await storage.getAllRecipes();
+      return res.status(200).json(allRecipes);
+    } catch (error) {
+      console.error("Error fetching all recipes:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch recipes"
+      });
+    }
+  });
+
   // Get all saved recipes
   app.get("/api/recipes/saved", async (req, res) => {
     try {
