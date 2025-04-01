@@ -715,24 +715,63 @@ export async function generateRecipes(
         availableRecipes = [...availableRecipes, ...additionalRecipes];
       }
       
-      // Customize recipes based on user's ingredients
+      // Enhanced recipe customization based on user's ingredients
       const customizedRecipes = availableRecipes.slice(0, 3).map((recipe: any) => {
-        // Add user ingredients to the recipe if they're not already included
-        const additionalIngredients = ingredients.filter(userIngredient => {
-          const userIngredientLower = userIngredient.toLowerCase();
-          // Check if any of the recipe ingredients contain this user ingredient
-          return !recipe.ingredients.some((recipeIngredient: string) => 
-            recipeIngredient.toLowerCase().includes(userIngredientLower)
+        // Find which user ingredients are already in the recipe
+        const userIngredientsInRecipe: string[] = [];
+        const additionalIngredients: string[] = [];
+        
+        // Process each user ingredient
+        ingredients.forEach(userIngredient => {
+          const userIngredientLower = userIngredient.toLowerCase().trim();
+          
+          // Check if this ingredient or something similar is already in the recipe
+          const alreadyIncluded = recipe.ingredients.some((recipeIngredient: string) => 
+            recipeIngredient.toLowerCase().includes(userIngredientLower) ||
+            userIngredientLower.includes(recipeIngredient.toLowerCase().split(',')[0].trim())
           );
+          
+          if (alreadyIncluded) {
+            userIngredientsInRecipe.push(userIngredient);
+          } else {
+            additionalIngredients.push(userIngredient);
+          }
         });
+        
+        // Generate a more dynamic title based on the ingredients
+        let newTitle = recipe.title;
+        if (additionalIngredients.length > 0 && additionalIngredients.length <= 2) {
+          newTitle = `${recipe.title} with ${additionalIngredients.join(' & ')}`;
+        } else if (additionalIngredients.length > 2) {
+          // If there are many new ingredients, create a more general updated title
+          const primaryIngredient = additionalIngredients[0];
+          newTitle = `${primaryIngredient.charAt(0).toUpperCase() + primaryIngredient.slice(1)} ${recipe.title}`;
+        }
+        
+        // Create a modified description mentioning the user's ingredients
+        let newDescription = recipe.description;
+        if (userIngredientsInRecipe.length > 0 || additionalIngredients.length > 0) {
+          const allUserIngredients = [...userIngredientsInRecipe, ...additionalIngredients];
+          const highlightIngredients = allUserIngredients.slice(0, 3);
+          
+          // Append to the existing description
+          newDescription = `${recipe.description} Made with your ${highlightIngredients.join(', ')}.`;
+        }
+        
+        // Update instructions when adding new ingredients
+        let newInstructions = [...recipe.instructions];
+        if (additionalIngredients.length > 0) {
+          // Add a new step or modify existing steps to include the new ingredients
+          newInstructions.push(`Add ${additionalIngredients.join(', ')} to enhance the flavor and make the dish your own.`);
+        }
         
         // Create a modified recipe with user's ingredients incorporated
         const modifiedRecipe = {
           ...recipe,
           ingredients: [...recipe.ingredients, ...additionalIngredients],
-          title: additionalIngredients.length > 0 
-            ? `${recipe.title} with ${additionalIngredients.join(' & ')}` 
-            : recipe.title,
+          title: newTitle,
+          description: newDescription,
+          instructions: newInstructions,
           dietaryFlags: {
             ...recipe.dietaryFlags,
             ...initialDietaryFlags
@@ -754,8 +793,8 @@ export async function generateRecipes(
   } catch (error) {
     console.error("Error generating recipes:", error);
     
-    // Fallback to sample recipes if API call fails
-    console.log("Falling back to sample recipes due to error");
+    // Fallback to sample recipes with enhanced customization if API call fails
+    console.log("Falling back to customized sample recipes due to error");
     
     const normalizedCuisine = cuisine.toLowerCase();
     const fallbackRecipes = sampleRecipesByCuisine[normalizedCuisine] || 
@@ -764,14 +803,64 @@ export async function generateRecipes(
     // Get appropriate food images for this cuisine
     const cuisineImages = foodImagesByCuisine[normalizedCuisine] || defaultFoodImages;
     
-    return fallbackRecipes.slice(0, 3).map((recipe: any, index: number) => ({
-      ...recipe,
-      cuisine: cuisine,
-      dietaryFlags: {
-        ...recipe.dietaryFlags,
-        ...createDietaryFlagsObject(dietary)
-      },
-      imageUrl: cuisineImages[index % cuisineImages.length]
-    }));
+    // Apply more advanced customization to the fallback recipes
+    return fallbackRecipes.slice(0, 3).map((recipe: any, index: number) => {
+      // Find which user ingredients can be incorporated
+      const userIngredientsInRecipe: string[] = [];
+      const additionalIngredients: string[] = [];
+      
+      // Process each user ingredient
+      ingredients.forEach(userIngredient => {
+        const userIngredientLower = userIngredient.toLowerCase().trim();
+        
+        // Check if this ingredient or something similar is already in the recipe
+        const alreadyIncluded = recipe.ingredients.some((recipeIngredient: string) => 
+          recipeIngredient.toLowerCase().includes(userIngredientLower)
+        );
+        
+        if (alreadyIncluded) {
+          userIngredientsInRecipe.push(userIngredient);
+        } else {
+          additionalIngredients.push(userIngredient);
+        }
+      });
+      
+      // Create a custom title highlighting the user's ingredients
+      let newTitle = recipe.title;
+      if (additionalIngredients.length > 0) {
+        if (additionalIngredients.length <= 2) {
+          newTitle = `${recipe.title} with ${additionalIngredients.join(' & ')}`;
+        } else {
+          // Focus on the main new ingredient for the title
+          newTitle = `${additionalIngredients[0].charAt(0).toUpperCase() + additionalIngredients[0].slice(1)} ${recipe.title}`;
+        }
+      }
+      
+      // Enhance the description to acknowledge the user's ingredients
+      let newDescription = recipe.description;
+      if (additionalIngredients.length > 0) {
+        newDescription = `${recipe.description} This recipe has been customized with your ${additionalIngredients.slice(0, 3).join(', ')}.`;
+      }
+      
+      // Enhance the instructions to incorporate new ingredients
+      let newInstructions = [...recipe.instructions];
+      if (additionalIngredients.length > 0) {
+        newInstructions.push(`Add your ${additionalIngredients.join(', ')} to make this dish uniquely yours.`);
+      }
+      
+      return {
+        ...recipe,
+        title: newTitle,
+        description: newDescription,
+        ingredients: [...recipe.ingredients, ...additionalIngredients],
+        instructions: newInstructions,
+        cuisine: cuisine,
+        dietaryFlags: {
+          ...recipe.dietaryFlags,
+          ...createDietaryFlagsObject(dietary)
+        },
+        imageUrl: cuisineImages[index % cuisineImages.length]
+      };
+    });
   }
 }
