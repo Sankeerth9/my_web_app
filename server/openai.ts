@@ -105,37 +105,168 @@ function generateUniversalRecipes(
 // Helper functions for the universal recipe generator
 function isProtein(ingredient: string): boolean {
   const proteins = [
-    'chicken', 'beef', 'pork', 'lamb', 'fish', 'salmon', 'tuna', 'shrimp', 
-    'tofu', 'eggs', 'egg', 'turkey', 'duck', 'bean', 'beans', 'lentil', 
-    'lentils', 'chickpea', 'chickpeas', 'paneer', 'tempeh', 'seitan'
+    // Meats
+    'chicken', 'beef', 'pork', 'lamb', 'fish', 'salmon', 'tuna', 'shrimp', 'turkey', 'duck',
+    'mutton', 'goat', 'venison', 'bison', 'rabbit', 'quail', 'pheasant', 'boar', 'veal', 'ham',
+    'bacon', 'sausage', 'steak', 'ribs', 'fillet', 'chop', 'ground meat', 'mince', 'crab', 'lobster',
+    'prawn', 'scallop', 'oyster', 'mussel', 'clam', 'squid', 'octopus', 'cod', 'trout', 'bass',
+    'tilapia', 'catfish', 'sardine', 'mackerel', 'herring', 'anchovy',
+    
+    // Plant-based proteins
+    'tofu', 'tempeh', 'seitan', 'bean', 'beans', 'lentil', 'lentils', 'chickpea', 'chickpeas',
+    'pea protein', 'edamame', 'soy', 'soybeans', 'quinoa', 'amaranth', 'spelt', 'teff', 'hempseed',
+    'chia seed', 'flaxseed', 'nutritional yeast', 'spirulina', 'nuts', 'nut', 'peanut', 'almond', 
+    'cashew', 'walnut', 'pistachio', 'pecan', 'hazelnut', 'macadamia',
+    
+    // Dairy proteins
+    'eggs', 'egg', 'paneer', 'cottage cheese', 'yogurt', 'greek yogurt', 'cheese', 'milk', 'whey',
+    'casein', 'quark', 'kefir', 'ricotta', 'curd',
+    
+    // Novel proteins
+    'impossible meat', 'beyond meat', 'plant-based meat', 'lab-grown', 'cultivated meat', 'insect protein',
+    'cricket', 'mealworm', 'mycoprotein', 'quorn'
   ];
   return proteins.some(protein => ingredient.toLowerCase().includes(protein));
 }
 
+// Identify if an ingredient is a vegetable
+function isVegetable(ingredient: string): boolean {
+  const vegetables = [
+    'lettuce', 'spinach', 'kale', 'arugula', 'chard', 'cabbage', 'bok choy', 'collard', 'broccoli',
+    'cauliflower', 'brussels sprout', 'asparagus', 'celery', 'carrot', 'bell pepper', 'capsicum',
+    'chili', 'chile', 'chilli', 'jalapeno', 'habanero', 'cucumber', 'zucchini', 'squash', 'pumpkin',
+    'eggplant', 'aubergine', 'tomato', 'potato', 'sweet potato', 'yam', 'taro', 'cassava', 'onion',
+    'garlic', 'shallot', 'leek', 'scallion', 'green onion', 'ginger', 'turmeric', 'radish', 'turnip',
+    'beet', 'beetroot', 'rutabaga', 'parsnip', 'artichoke', 'corn', 'maize', 'pea', 'snap pea',
+    'snow pea', 'green bean', 'string bean', 'mushroom', 'okra', 'bamboo shoot', 'water chestnut',
+    'lotus root', 'seaweed', 'nori', 'wakame', 'kelp', 'sprout', 'microgreen', 'jicama'
+  ];
+  return vegetables.some(vegetable => ingredient.toLowerCase().includes(vegetable));
+}
+
+// Identify if an ingredient is a grain/starch
+function isGrain(ingredient: string): boolean {
+  const grains = [
+    'rice', 'wheat', 'oat', 'barley', 'rye', 'corn', 'maize', 'quinoa', 'millet', 'sorghum',
+    'spelt', 'farro', 'bulgur', 'couscous', 'pasta', 'noodle', 'spaghetti', 'macaroni', 'penne',
+    'fettuccine', 'linguine', 'lasagna', 'rigatoni', 'orzo', 'bread', 'flour', 'maida', 'all-purpose',
+    'semolina', 'buckwheat', 'amaranth', 'teff', 'wild rice', 'arborio', 'basmati', 'jasmine',
+    'sticky rice', 'glutinous', 'polenta', 'grits', 'tortilla', 'wrap', 'pita', 'naan', 'chapati',
+    'roti', 'paratha', 'bun', 'roll', 'bagel', 'croissant', 'cereal', 'granola', 'muesli',
+    'cracker', 'pretzel', 'chip', 'crisp'
+  ];
+  return grains.some(grain => ingredient.toLowerCase().includes(grain));
+}
+
+// Identify if an ingredient is a spice or herb
+function isSpiceOrHerb(ingredient: string): boolean {
+  const spicesAndHerbs = [
+    'salt', 'pepper', 'cumin', 'coriander', 'turmeric', 'paprika', 'chili powder', 'cayenne',
+    'cinnamon', 'nutmeg', 'clove', 'allspice', 'cardamom', 'star anise', 'fennel', 'anise',
+    'saffron', 'oregano', 'thyme', 'rosemary', 'sage', 'basil', 'parsley', 'cilantro', 'dill',
+    'mint', 'tarragon', 'marjoram', 'bay leaf', 'vanilla', 'ginger', 'garlic', 'onion powder',
+    'mustard', 'mustard seed', 'fenugreek', 'asafoetida', 'hing', 'mace', 'galangal', 'lemongrass',
+    'kaffir lime', 'curry leaf', 'sumac', 'za\'atar', 'herbes de provence', 'italian seasoning',
+    'garam masala', 'five spice', 'berbere', 'ras el hanout', 'tajin', 'adobo', 'curry powder',
+    'shichimi', 'wasabi', 'horseradish', 'caraway', 'juniper', 'sichuan pepper', 'grains of paradise',
+    'black salt', 'kala namak', 'pink salt', 'sea salt', 'kosher salt'
+  ];
+  return spicesAndHerbs.some(spice => ingredient.toLowerCase().includes(spice));
+}
+
 function getRecipeType(cuisine: string, ingredients: string[]): string {
-  // Check main ingredients to determine recipe type
+  // Count ingredient types to determine the most appropriate recipe type
+  const hasGrains = ingredients.some(i => isGrain(i));
+  const hasProteins = ingredients.some(i => isProtein(i));
+  const hasVegetables = ingredients.some(i => isVegetable(i));
+  const hasSpices = ingredients.some(i => isSpiceOrHerb(i));
+  
+  // Rice-based dishes
   if (ingredients.some(i => i.toLowerCase().includes('rice'))) {
     if (cuisine === 'indian') return 'biryani';
     if (cuisine === 'chinese') return 'fried rice';
     if (cuisine === 'japanese') return 'rice bowl';
+    if (cuisine === 'mexican') return 'rice bowl';
+    if (cuisine === 'american' && hasProteins) return 'rice casserole';
     return 'rice dish';
   }
   
-  if (ingredients.some(i => i.toLowerCase().includes('pasta') || i.toLowerCase().includes('noodle'))) {
+  // Pasta and noodle dishes
+  if (ingredients.some(i => 
+    i.toLowerCase().includes('pasta') || 
+    i.toLowerCase().includes('noodle') ||
+    i.toLowerCase().includes('spaghetti') ||
+    i.toLowerCase().includes('macaroni') ||
+    i.toLowerCase().includes('fettuccine')
+  )) {
     if (cuisine === 'italian') return 'pasta';
-    if (cuisine === 'chinese' || cuisine === 'japanese') return 'noodle dish';
-    return 'noodle recipe';
+    if (cuisine === 'chinese') return 'lo mein';
+    if (cuisine === 'japanese') return 'ramen';
+    if (cuisine === 'american' && ingredients.some(i => i.toLowerCase().includes('cheese'))) return 'mac and cheese';
+    return 'noodle dish';
   }
   
-  if (ingredients.some(i => isProtein(i))) {
-    if (cuisine === 'indian') return 'curry';
-    if (cuisine === 'chinese') return 'stir-fry';
-    if (cuisine === 'italian') return 'sauté';
+  // Soup dishes
+  if (ingredients.some(i => 
+    i.toLowerCase().includes('broth') || 
+    i.toLowerCase().includes('stock') || 
+    i.toLowerCase().includes('soup')
+  )) {
+    if (cuisine === 'chinese') return 'soup';
+    if (cuisine === 'japanese') return 'miso soup';
+    if (cuisine === 'italian') return 'minestrone';
+    if (cuisine === 'american') return 'chowder';
+    return 'soup';
+  }
+  
+  // Bread-based dishes
+  if (ingredients.some(i => 
+    i.toLowerCase().includes('bread') || 
+    i.toLowerCase().includes('dough') || 
+    i.toLowerCase().includes('flour') ||
+    i.toLowerCase().includes('maida')
+  )) {
+    if (cuisine === 'italian') return hasProteins ? 'pizza' : 'flatbread';
+    if (cuisine === 'indian') return 'naan';
+    if (cuisine === 'mexican') return 'tortilla';
+    if (cuisine === 'american') return 'sandwich';
+    return 'bread dish';
+  }
+  
+  // Main protein dishes
+  if (hasProteins) {
+    if (cuisine === 'indian') return hasSpices ? 'curry' : 'masala';
+    if (cuisine === 'chinese') return hasVegetables ? 'stir-fry' : 'roast';
+    if (cuisine === 'italian') return hasVegetables ? 'sauté' : 'roast';
     if (cuisine === 'mexican') return 'taco filling';
+    if (cuisine === 'japanese') return 'teriyaki';
     if (cuisine === 'american') return 'grill';
     return 'main dish';
   }
   
+  // Vegetable-forward dishes
+  if (hasVegetables && !hasProteins) {
+    if (cuisine === 'indian') return 'vegetable curry';
+    if (cuisine === 'chinese') return 'vegetable stir-fry';
+    if (cuisine === 'italian') return 'vegetable medley';
+    if (cuisine === 'mexican') return 'vegetable fajitas';
+    if (cuisine === 'japanese') return 'vegetable tempura';
+    if (cuisine === 'american') return 'roasted vegetables';
+    return 'vegetable dish';
+  }
+  
+  // Snack or appetizer if only spices and minimal ingredients
+  if (hasSpices && ingredients.length < 4 && !(hasProteins || hasVegetables || hasGrains)) {
+    if (cuisine === 'indian') return 'chaat';
+    if (cuisine === 'chinese') return 'dim sum';
+    if (cuisine === 'italian') return 'antipasto';
+    if (cuisine === 'mexican') return 'salsa';
+    if (cuisine === 'japanese') return 'appetizer';
+    if (cuisine === 'american') return 'snack';
+    return 'appetizer';
+  }
+  
+  // Default - catch all for anything else
   return 'recipe';
 }
 
@@ -193,37 +324,154 @@ function generateRecipeDescription(mainIngredients: string[], cuisine: string, r
 function calculateApproximateCalories(ingredients: string[], recipeType: string): number {
   // Base calories by recipe type
   const baseCalories: Record<string, number> = {
+    // Indian cuisine
     'curry': 450,
+    'vegetable curry': 350,
     'biryani': 500,
+    'masala': 400,
+    'naan': 300,
+    'chaat': 250,
+    
+    // Chinese cuisine
     'stir-fry': 350,
+    'vegetable stir-fry': 250,
     'fried rice': 400,
+    'lo mein': 450,
+    'roast': 400,
+    'soup': 200,
+    'dim sum': 300,
+    
+    // Italian cuisine
     'pasta': 450,
-    'noodle dish': 400,
-    'rice dish': 450,
-    'grill': 350,
+    'pizza': 500,
+    'flatbread': 350,
+    'sauté': 350,
+    'roast': 400,
+    'vegetable medley': 200,
+    'minestrone': 250,
+    'antipasto': 300,
+    
+    // Japanese cuisine
+    'rice bowl': 400,
+    'ramen': 450,
+    'teriyaki': 380,
+    'miso soup': 200,
+    'vegetable tempura': 350,
+    
+    // Mexican cuisine
+    'taco filling': 350,
+    'rice bowl': 400,
+    'tortilla': 300,
+    'vegetable fajitas': 300,
+    'salsa': 100,
+    
+    // American cuisine
+    'grill': 400,
+    'rice casserole': 500,
+    'mac and cheese': 550,
+    'sandwich': 450,
+    'chowder': 400,
+    'roasted vegetables': 250,
+    'snack': 200,
+    
+    // General types
     'main dish': 400,
+    'vegetable dish': 250,
+    'rice dish': 400,
+    'noodle dish': 400,
+    'bread dish': 350,
+    'soup': 200,
+    'appetizer': 250,
     'recipe': 350
   };
   
-  // Adjust calories based on protein presence
+  // Start with base calories for the recipe type
   let adjustedCalories = baseCalories[recipeType] || 400;
   
-  if (ingredients.some(i => i.toLowerCase().includes('chicken') || i.toLowerCase().includes('fish'))) {
-    adjustedCalories -= 50; // Leaner proteins
+  // Count different ingredient types
+  const proteinCount = ingredients.filter(i => isProtein(i)).length;
+  const vegetableCount = ingredients.filter(i => isVegetable(i)).length;
+  const grainCount = ingredients.filter(i => isGrain(i)).length;
+  
+  // Adjust calories based on ingredient counts
+  
+  // Proteins add or subtract calories depending on type
+  ingredients.forEach(ingredient => {
+    const lowerIngredient = ingredient.toLowerCase();
+    
+    // Lean proteins (subtract calories)
+    if (lowerIngredient.includes('chicken breast') || 
+        lowerIngredient.includes('fish') || 
+        lowerIngredient.includes('egg white') ||
+        lowerIngredient.includes('tofu') ||
+        lowerIngredient.includes('shrimp')) {
+      adjustedCalories -= 20;
+    }
+    
+    // Medium proteins (neutral)
+    else if (lowerIngredient.includes('chicken thigh') || 
+             lowerIngredient.includes('turkey') || 
+             lowerIngredient.includes('egg') ||
+             lowerIngredient.includes('legume') ||
+             lowerIngredient.includes('bean') ||
+             lowerIngredient.includes('lentil')) {
+      // No adjustment
+    }
+    
+    // Fatty proteins (add calories)
+    else if (lowerIngredient.includes('beef') || 
+             lowerIngredient.includes('pork') || 
+             lowerIngredient.includes('lamb') ||
+             lowerIngredient.includes('duck') ||
+             lowerIngredient.includes('bacon') ||
+             lowerIngredient.includes('sausage')) {
+      adjustedCalories += 40;
+    }
+  });
+  
+  // Dairy and fats add calories
+  ingredients.forEach(ingredient => {
+    const lowerIngredient = ingredient.toLowerCase();
+    
+    if (lowerIngredient.includes('cream') || 
+        lowerIngredient.includes('butter') || 
+        lowerIngredient.includes('cheese') ||
+        lowerIngredient.includes('ghee') ||
+        lowerIngredient.includes('oil') ||
+        lowerIngredient.includes('mayonnaise')) {
+      adjustedCalories += 50;
+    }
+  });
+  
+  // More vegetables reduce calories
+  if (vegetableCount > 2) {
+    adjustedCalories -= 20 * (vegetableCount - 2);
   }
   
-  if (ingredients.some(i => i.toLowerCase().includes('beef') || i.toLowerCase().includes('pork'))) {
-    adjustedCalories += 50; // Fattier proteins
+  // More grains increase calories
+  if (grainCount > 1) {
+    adjustedCalories += 30 * (grainCount - 1);
   }
   
-  if (ingredients.some(i => i.toLowerCase().includes('cream') || i.toLowerCase().includes('cheese'))) {
-    adjustedCalories += 100; // Dairy adds calories
-  }
+  // Sweet ingredients add calories
+  ingredients.forEach(ingredient => {
+    const lowerIngredient = ingredient.toLowerCase();
+    
+    if (lowerIngredient.includes('sugar') || 
+        lowerIngredient.includes('honey') || 
+        lowerIngredient.includes('syrup') ||
+        lowerIngredient.includes('chocolate') ||
+        lowerIngredient.includes('caramel')) {
+      adjustedCalories += 40;
+    }
+  });
   
-  // Apply some randomness to make it more realistic
-  adjustedCalories += Math.floor(Math.random() * 50);
+  // Apply some randomness to make it more realistic (±10%)
+  const randomAdjustment = Math.floor((Math.random() * 0.2 - 0.1) * adjustedCalories);
+  adjustedCalories += randomAdjustment;
   
-  return adjustedCalories;
+  // Ensure minimum calories
+  return Math.max(150, adjustedCalories);
 }
 
 function calculateCookingTime(recipeType: string, ingredients: string[]): string {
