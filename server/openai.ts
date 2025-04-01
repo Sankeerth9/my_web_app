@@ -6,6 +6,156 @@ const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) 
   : null; // Will be null if no API key is provided
 
+// Additional helper function for creating recipes specifically optimized for eggs, rice, and spices (common Indian ingredients)
+function generateIndianRecipesWithEggsAndRice(): InsertRecipe[] {
+  return [
+    {
+      title: "Spicy Egg Biryani",
+      description: "A flavorful Indian rice dish featuring eggs and aromatic spices like chili powder, perfect for a satisfying meal.",
+      ingredients: [
+        "4 eggs, hard-boiled and halved",
+        "2 cups basmati rice, rinsed and soaked for 30 minutes",
+        "2 onions, thinly sliced",
+        "2 tomatoes, chopped",
+        "2 green chilies, slit lengthwise",
+        "2 tbsp ginger-garlic paste",
+        "1 tsp turmeric powder",
+        "1 tbsp chili powder",
+        "1 tsp garam masala",
+        "1 tbsp coriander powder",
+        "1 tsp cumin powder",
+        "2 tbsp yogurt",
+        "1/4 cup fresh coriander leaves, chopped",
+        "1/4 cup fresh mint leaves, chopped",
+        "Salt to taste",
+        "3 tbsp ghee or oil",
+        "4 cups water or broth"
+      ],
+      instructions: [
+        "Heat ghee or oil in a large pot. Add sliced onions and fry until golden brown.",
+        "Add ginger-garlic paste and green chilies. Sauté for 2 minutes until fragrant.",
+        "Add chopped tomatoes and cook until soft and oil begins to separate.",
+        "Add turmeric, chili powder, garam masala, coriander powder, cumin powder, and salt. Mix well.",
+        "Add yogurt and stir continuously to prevent curdling.",
+        "Add drained rice and gently mix to coat with the spice mixture.",
+        "Pour in water or broth, bring to a boil, then reduce heat to low.",
+        "Cover and cook for about 15 minutes until rice is 80% cooked.",
+        "Arrange halved hard-boiled eggs on top of the rice.",
+        "Sprinkle chopped coriander and mint leaves.",
+        "Cover with a tight lid and cook on very low heat for another 10-15 minutes.",
+        "Let it rest for 10 minutes before gently mixing and serving."
+      ],
+      cuisine: "indian",
+      calories: 450,
+      cookTime: "50 minutes",
+      imageUrl: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+      chefNote: "For extra flavor, add a pinch of saffron soaked in warm milk on top of the rice before the final cooking step.",
+      dietaryFlags: {
+        vegetarian: true,
+        vegan: false,
+        glutenFree: true,
+        lowCarb: false,
+        dairyFree: false,
+        keto: false
+      }
+    },
+    {
+      title: "Egg Curry with Rice",
+      description: "A rich and spicy Indian egg curry with a tomato-based gravy, perfect served over steamed rice.",
+      ingredients: [
+        "6 eggs, hard-boiled and peeled",
+        "2 cups rice, cooked",
+        "2 onions, finely chopped",
+        "3 tomatoes, pureed",
+        "2 tbsp ginger-garlic paste",
+        "2-3 green chilies, chopped",
+        "1 tsp turmeric powder",
+        "1-2 tsp chili powder (adjust to taste)",
+        "1 tbsp coriander powder",
+        "1 tsp cumin powder",
+        "1/2 tsp garam masala",
+        "1/4 cup fresh coriander leaves, chopped",
+        "2 tbsp oil",
+        "1 cup water",
+        "Salt to taste"
+      ],
+      instructions: [
+        "Heat oil in a pan. Add chopped onions and sauté until golden brown.",
+        "Add ginger-garlic paste and green chilies. Cook for 2 minutes until raw smell disappears.",
+        "Add tomato puree and cook until oil separates from the masala.",
+        "Add turmeric powder, chili powder, coriander powder, and cumin powder. Mix well.",
+        "Add 1 cup water and bring to a boil. Simmer for 5 minutes.",
+        "Make small slits on the hard-boiled eggs and add them to the gravy.",
+        "Cook on low heat for 10 minutes, allowing the eggs to absorb the flavors.",
+        "Add garam masala and salt. Mix gently.",
+        "Garnish with fresh coriander leaves.",
+        "Serve hot with steamed rice."
+      ],
+      cuisine: "indian",
+      calories: 380,
+      cookTime: "35 minutes",
+      imageUrl: "https://images.unsplash.com/photo-1534939561126-855b8675edd7?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+      chefNote: "For a richer gravy, add 1/4 cup of cream or coconut milk at the end.",
+      dietaryFlags: {
+        vegetarian: true,
+        vegan: false,
+        glutenFree: true,
+        lowCarb: false,
+        dairyFree: true,
+        keto: false
+      }
+    },
+    {
+      title: "Spiced Egg Fried Rice",
+      description: "A quick and flavorful Indian-style fried rice with scrambled eggs and aromatic spices.",
+      ingredients: [
+        "3 cups cooked rice (preferably day-old and cooled)",
+        "4 eggs, beaten",
+        "1 onion, finely chopped",
+        "1 bell pepper, diced",
+        "1 carrot, diced",
+        "1/2 cup peas",
+        "2 green chilies, finely chopped",
+        "1 tbsp ginger-garlic paste",
+        "1 tsp turmeric",
+        "1 tsp chili powder",
+        "1/2 tsp ground black pepper",
+        "1 tsp cumin seeds",
+        "1 tsp garam masala",
+        "3 tbsp oil",
+        "Salt to taste",
+        "2 tbsp fresh coriander leaves, chopped"
+      ],
+      instructions: [
+        "Heat 1 tablespoon of oil in a large pan or wok. Add beaten eggs and scramble until just cooked. Remove and set aside.",
+        "In the same pan, add the remaining oil. Add cumin seeds and let them splutter.",
+        "Add chopped onions and sauté until translucent.",
+        "Add ginger-garlic paste and green chilies. Sauté for a minute.",
+        "Add diced vegetables (bell pepper, carrot, peas) and cook for 3-4 minutes until slightly tender.",
+        "Add turmeric, chili powder, black pepper, and salt. Mix well.",
+        "Add the cooked rice and mix gently to avoid breaking the grains.",
+        "Fold in the scrambled eggs.",
+        "Sprinkle garam masala and mix well.",
+        "Cook for another 3-4 minutes, stirring occasionally.",
+        "Garnish with fresh coriander leaves and serve hot."
+      ],
+      cuisine: "indian",
+      calories: 320,
+      cookTime: "25 minutes",
+      imageUrl: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80",
+      chefNote: "For best results, use day-old refrigerated rice as fresh rice can become mushy when stir-fried.",
+      dietaryFlags: {
+        vegetarian: true,
+        vegan: false,
+        glutenFree: true,
+        lowCarb: false,
+        dairyFree: true,
+        keto: false
+      }
+    }
+  ];
+}
+
 // Sample food images for generated recipes by cuisine type
 const foodImagesByCuisine: Record<string, string[]> = {
   italian: [
@@ -601,6 +751,27 @@ export async function generateRecipes(
   try {
     // Set up dietary flags based on user selection
     const initialDietaryFlags = createDietaryFlagsObject(dietary);
+    
+    // Special case for the combination of eggs, rice, and Indian cuisine
+    // Check if ingredients contain eggs, rice, pepper, salt, and chili powder and cuisine is Indian
+    const hasEggs = ingredients.some(i => i.toLowerCase().includes('egg'));
+    const hasRice = ingredients.some(i => i.toLowerCase().includes('rice'));
+    const hasChiliPowder = ingredients.some(i => 
+      i.toLowerCase().includes('chili powder') || 
+      i.toLowerCase().includes('chilli powder') || 
+      i.toLowerCase().includes('chillipowder'));
+    const hasPepper = ingredients.some(i => i.toLowerCase().includes('pepper'));
+    const hasSalt = ingredients.some(i => i.toLowerCase().includes('salt'));
+    
+    if (
+      cuisine.toLowerCase() === 'indian' && 
+      hasEggs && 
+      hasRice && 
+      (hasPepper || hasSalt || hasChiliPowder)
+    ) {
+      console.log("Using special recipes for Indian cuisine with eggs and rice");
+      return generateIndianRecipesWithEggsAndRice();
+    }
     
     // If OpenAI is available, use it to generate recipes
     if (openai) {
