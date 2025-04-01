@@ -380,7 +380,6 @@ function calculateApproximateCalories(ingredients: string[], recipeType: string)
     'rice dish': 400,
     'noodle dish': 400,
     'bread dish': 350,
-    'general_soup': 200,
     'appetizer': 250,
     'recipe': 350
   };
